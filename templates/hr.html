@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MARDUK INSTITUTE — HR 批量筛选</title>
+<link rel="stylesheet" href="/static/css/style.css">
+<style>
+    body { background: var(--bg-deep); color: var(--text-primary); font-family: var(--mono); margin: 0; min-height: 100vh; overflow-y: auto; }
+    .hr-app { display: flex; flex-direction: column; min-height: unset; }
+
+    .hr-header {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 16px 32px; background: var(--bg-panel);
+        border-bottom: 1px solid var(--border-dim);
+    }
+    .hr-header h1 { font-size: 18px; font-weight: 700; letter-spacing: 2px; color: var(--nerv-orange); margin: 0; }
+    .hr-header .header-sub { font-size: 11px; color: var(--text-muted); letter-spacing: 1px; margin-top: 2px; }
+    .hr-header a { color: var(--text-muted); font-size: 13px; text-decoration: none; letter-spacing: 1px; }
+    .hr-header a:hover { color: var(--nerv-orange); }
+
+    .hr-main { flex: 1; padding: 32px; max-width: 1400px; margin: 0 auto; width: 100%; box-sizing: border-box; }
+
+    .section-title {
+        font-size: 14px; font-weight: 700; letter-spacing: 2px;
+        color: var(--eva-amber); margin-bottom: 20px;
+        padding-bottom: 10px; border-bottom: 1px solid rgba(255,184,0,0.15);
+    }
+    .section-title .zh { color: var(--text-muted); font-size: 12px; font-weight: 400; margin-left: 8px; letter-spacing: 0.5px; }
+
+    .job-form {
+        background: var(--bg-panel); border: 1px solid var(--border-dim);
+        padding: 28px; margin-bottom: 32px;
+    }
+    .job-form .form-row { display: flex; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
+    .job-form .form-group { flex: 1; min-width: 220px; }
+    .job-form label { display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); letter-spacing: 1px; margin-bottom: 6px; }
+    .job-form label .zh-label { font-size: 10px; color: rgba(255,255,255,0.3); margin-left: 4px; }
+    .job-form input, .job-form textarea {
+        width: 100%; box-sizing: border-box; padding: 12px 16px;
+        background: var(--bg-deep); border: 1px solid var(--border-dim);
+        color: var(--text-primary); font-family: var(--mono); font-size: 14px;
+        outline: none; transition: border-color 0.3s;
+    }
+    .job-form input:focus, .job-form textarea:focus { border-color: var(--nerv-orange); }
+    .job-form textarea { height: 100px; resize: vertical; }
+
+    .btn-nerv {
+        padding: 12px 28px; background: var(--nerv-orange); color: var(--bg-deep);
+        border: none; font-family: var(--mono); font-size: 13px; font-weight: 700;
+        letter-spacing: 1.5px; cursor: pointer; transition: all 0.3s;
+    }
+    .btn-nerv:hover { box-shadow: 0 0 15px var(--nerv-orange-dim); }
+    .btn-nerv:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .btn-sm {
+        padding: 6px 14px; font-size: 11px; letter-spacing: 1px;
+        border: 1px solid; background: transparent; cursor: pointer;
+        font-family: var(--mono); font-weight: 700; transition: all 0.3s;
+    }
+    .btn-sm.green { color: var(--eva-green); border-color: var(--eva-green); }
+    .btn-sm.green:hover { background: var(--eva-green-dim); }
+    .btn-sm.amber { color: var(--eva-amber); border-color: var(--eva-amber); }
+    .btn-sm.amber:hover { background: var(--eva-amber-dim); }
+    .btn-sm.red { color: var(--eva-red); border-color: var(--eva-red); }
+    .btn-sm.red:hover { background: var(--eva-red-dim); }
+
+    .job-list { margin-bottom: 32px; }
+    .job-card {
+        background: var(--bg-panel); border: 1px solid var(--border-dim);
+        padding: 18px 24px; margin-bottom: 10px; cursor: pointer;
+        transition: border-color 0.3s; display: flex; justify-content: space-between; align-items: center;
+    }
+    .job-card:hover { border-color: var(--nerv-orange); }
+    .job-card.active { border-color: var(--nerv-orange); background: rgba(255,184,0,0.03); }
+    .job-card-title { font-size: 15px; font-weight: 700; color: var(--text-primary); letter-spacing: 1px; }
+    .job-card-meta { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
+    .job-card-actions { display: flex; gap: 10px; }
+
+    .upload-zone {
+        background: var(--bg-panel); border: 2px dashed var(--border-dim);
+        padding: 50px; text-align: center; margin-bottom: 32px;
+        transition: border-color 0.3s; cursor: pointer;
+    }
+    .upload-zone:hover, .upload-zone.dragover { border-color: var(--nerv-orange); }
+    .upload-zone p { color: var(--text-muted); font-size: 14px; letter-spacing: 1px; margin: 10px 0; }
+    .upload-zone .icon { font-size: 36px; color: var(--nerv-orange); }
+    .upload-zone input { display: none; }
+
+    .progress-area { margin-bottom: 32px; display: none; }
+    .progress-area.active { display: block; }
+    .progress-bar-h { height: 4px; background: rgba(255,255,255,0.04); border: 1px solid var(--border-dim); margin-bottom: 10px; }
+    .progress-bar-h .fill { height: 100%; background: var(--nerv-orange); box-shadow: 0 0 8px var(--nerv-orange-dim); transition: width 0.5s; }
+    .progress-text { font-size: 12px; color: var(--text-muted); letter-spacing: 1px; }
+
+    .results-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .results-table th {
+        text-align: left; padding: 12px 14px; font-size: 11px; font-weight: 700;
+        letter-spacing: 1.5px; color: var(--text-muted);
+        border-bottom: 1px solid var(--border-dim); background: var(--bg-panel);
+    }
+    .results-table th .th-zh { display: block; font-size: 9px; color: rgba(255,255,255,0.25); letter-spacing: 0.5px; margin-top: 2px; }
+    .results-table td {
+        padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,0.02);
+        vertical-align: middle;
+    }
+    .results-table tr:hover td { background: rgba(255,184,0,0.02); }
+
+    .score-badge {
+        display: inline-block; padding: 4px 12px; font-weight: 700;
+        font-size: 14px; letter-spacing: 0.5px; border: 1px solid;
+    }
+    .score-badge.high { color: var(--eva-green); border-color: var(--eva-green); background: var(--eva-green-dim); }
+    .score-badge.mid { color: var(--eva-amber); border-color: var(--eva-amber); background: var(--eva-amber-dim); }
+    .score-badge.low { color: var(--eva-red); border-color: var(--eva-red); background: var(--eva-red-dim); }
+
+    .skill-tag {
+        display: inline-block; padding: 3px 8px; font-size: 11px;
+        margin: 2px 3px; border: 1px solid;
+    }
+    .skill-tag.match { color: var(--eva-green); border-color: rgba(57,255,20,0.3); }
+    .skill-tag.miss { color: var(--eva-red); border-color: rgba(255,45,45,0.3); }
+
+    .sms-modal {
+        display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.7); z-index: 100; justify-content: center; align-items: center;
+    }
+    .sms-modal.active { display: flex; }
+    .sms-modal-content {
+        background: var(--bg-panel); border: 1px solid var(--nerv-orange);
+        padding: 32px; width: 90%; max-width: 560px;
+    }
+    .sms-modal-content h3 { font-size: 14px; color: var(--nerv-orange); letter-spacing: 2px; margin: 0 0 8px; }
+    .sms-modal-content h3 .zh { font-size: 11px; color: var(--text-muted); font-weight: 400; margin-left: 8px; }
+    .sms-modal-content .sms-info { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; letter-spacing: 1px; }
+    .sms-modal-content textarea {
+        width: 100%; box-sizing: border-box; height: 140px; padding: 14px;
+        background: var(--bg-deep); border: 1px solid var(--border-dim);
+        color: var(--text-primary); font-family: var(--mono); font-size: 14px;
+        resize: vertical; outline: none;
+    }
+    .sms-modal-content textarea:focus { border-color: var(--nerv-orange); }
+    .sms-modal-actions { display: flex; gap: 12px; margin-top: 18px; justify-content: flex-end; }
+
+    .empty-state { text-align: center; padding: 70px 20px; color: var(--text-muted); }
+    .empty-state .icon { font-size: 42px; margin-bottom: 16px; opacity: 0.3; }
+    .empty-state p { font-size: 14px; letter-spacing: 1px; }
+    .empty-state .zh { font-size: 12px; opacity: 0.6; margin-top: 4px; }
+
+    .rec-label { font-size: 10px; color: var(--text-muted); margin-top: 4px; display: block; }
+    .rec-label.recommend { color: var(--eva-green); }
+    .rec-label.reject { color: var(--eva-red); }
+
+    @media (max-width: 768px) {
+        .hr-main { padding: 16px; }
+        .hr-header { padding: 12px 16px; }
+        .hr-header h1 { font-size: 14px; }
+        .job-form .form-row { flex-direction: column; }
+        .results-table { font-size: 11px; }
+        .results-table th, .results-table td { padding: 8px 8px; }
+        .upload-zone { padding: 30px; }
+    }
+</style>
+</head>
+<body>
+<div class="hr-app">
+    <div class="hr-header">
+        <div>
+            <h1>MARDUK HR — BATCH SCREENING</h1>
+            <div class="header-sub">批量简历筛选系统</div>
+        </div>
+        <a href="/v1">← 返回 / BACK</a>
+    </div>
+
+    <div class="hr-main">
+        <div class="section-title">CREATE JOB POSITION <span class="zh">创建招聘岗位</span></div>
+        <div class="job-form">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>JOB TITLE <span class="zh-label">岗位名称</span></label>
+                    <input type="text" id="jobTitle" placeholder="如：高级Python开发工程师 / e.g. Senior Python Developer">
+                </div>
+                <div class="form-group">
+                    <label>SALARY RANGE <span class="zh-label">薪资范围</span></label>
+                    <input type="text" id="jobSalary" placeholder="如：20K-35K / e.g. 20K-35K">
+                </div>
+                <div class="form-group">
+                    <label>CITY <span class="zh-label">工作城市</span></label>
+                    <input type="text" id="jobCity" placeholder="如：上海 / e.g. Shanghai">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>REQUIREMENTS <span class="zh-label">岗位要求</span></label>
+                <textarea id="jobRequirements" placeholder="描述岗位要求、技能需求、经验要求等...&#10;Describe the job requirements, skills, experience needed..."></textarea>
+            </div>
+            <button class="btn-nerv" id="btnCreateJob">CREATE POSITION / 创建岗位</button>
+        </div>
+
+        <div class="section-title">JOB POSITIONS <span class="zh">岗位列表</span></div>
+        <div class="job-list" id="jobList">
+            <div class="empty-state"><div class="icon">📋</div><p>NO POSITIONS YET</p><p class="zh">暂无岗位，请先创建</p></div>
+        </div>
+
+        <div id="uploadSection" style="display:none">
+            <div class="section-title">UPLOAD RESUMES <span class="zh">上传简历</span></div>
+            <div class="upload-zone" id="uploadZone">
+                <div class="icon">📁</div>
+                <p>DROP RESUMES HERE OR CLICK TO SELECT</p>
+                <p style="font-size:12px;opacity:0.5">拖拽简历到此处或点击选择文件</p>
+                <p style="font-size:11px;opacity:0.4">PDF / DOCX / TXT — 最多20个文件 / MAX 20 FILES</p>
+                <input type="file" id="fileInput" multiple accept=".pdf,.docx,.txt">
+            </div>
+            <div class="progress-area" id="progressArea">
+                <div class="progress-bar-h"><div class="fill" id="progressFill" style="width:0%"></div></div>
+                <div class="progress-text" id="progressText">ANALYZING... / 分析中...</div>
+            </div>
+
+            <div class="section-title">SCREENING RESULTS <span class="zh">筛选结果</span></div>
+            <div id="resultsArea">
+                <div class="empty-state"><div class="icon">🔍</div><p>UPLOAD RESUMES TO START SCREENING</p><p class="zh">上传简历开始筛选</p></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="sms-modal" id="smsModal">
+    <div class="sms-modal-content">
+        <h3>INTERVIEW SMS <span class="zh">面试邀请短信</span></h3>
+        <div class="sms-info">
+            CANDIDATE / 候选人: <span id="smsCandidateName" style="color:var(--text-primary)"></span>
+            &nbsp;|&nbsp; PHONE / 电话: <span id="smsCandidatePhone" style="color:var(--text-primary)"></span>
+        </div>
+        <textarea id="smsContent"></textarea>
+        <div class="sms-modal-actions">
+            <button class="btn-sm amber" id="btnGenerateSms">AI GENERATE / AI生成</button>
+            <button class="btn-sm green" id="btnSendSms">SEND SMS / 发送短信</button>
+            <button class="btn-sm red" id="btnCloseSms">CLOSE / 关闭</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const token = localStorage.getItem('auth_token');
+if (!token) { window.location.href = '/'; }
+
+let currentJobId = null;
+let screenings = [];
+
+const headers = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`
+};
+
+async function loadJobs() {
+    const res = await fetch('/api/hr/jobs', { headers });
+    const jobs = await res.json();
+    const list = document.getElementById('jobList');
+    if (!jobs.length) {
+        list.innerHTML = '<div class="empty-state"><div class="icon">📋</div><p>NO POSITIONS YET</p><p class="zh">暂无岗位，请先创建</p></div>';
+        return;
+    }
+    list.innerHTML = jobs.map(j => `
+        <div class="job-card ${j.id === currentJobId ? 'active' : ''}" data-id="${j.id}">
+            <div>
+                <div class="job-card-title">${j.title}</div>
+                <div class="job-card-meta">${j.city || '未填写'} | ${j.salary_range || '未填写'} | ${j.requirements.slice(0,80)}...</div>
+            </div>
+            <div class="job-card-actions">
+                <button class="btn-sm green" onclick="selectJob(${j.id})">SELECT / 选择</button>
+                <button class="btn-sm amber" onclick="loadScreenings(${j.id})">RESULTS / 结果</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+async function selectJob(id) {
+    currentJobId = id;
+    document.getElementById('uploadSection').style.display = '';
+    document.querySelectorAll('.job-card').forEach(c => c.classList.toggle('active', parseInt(c.dataset.id) === id));
+    screenings = [];
+    renderResults();
+}
+
+document.getElementById('btnCreateJob').addEventListener('click', async () => {
+    const title = document.getElementById('jobTitle').value.trim();
+    const requirements = document.getElementById('jobRequirements').value.trim();
+    const salary_range = document.getElementById('jobSalary').value.trim();
+    const city = document.getElementById('jobCity').value.trim();
+    if (!title || !requirements) { alert('请填写岗位名称和要求 / Please fill in job title and requirements'); return; }
+
+    const btn = document.getElementById('btnCreateJob');
+    btn.disabled = true; btn.textContent = 'CREATING... / 创建中...';
+
+    try {
+        const res = await fetch('/api/hr/jobs', {
+            method: 'POST', headers,
+            body: JSON.stringify({ title, requirements, salary_range, city })
+        });
+        const data = await res.json();
+        if (!res.ok) { alert(data.error || '创建失败 / Creation failed'); return; }
+        document.getElementById('jobTitle').value = '';
+        document.getElementById('jobRequirements').value = '';
+        document.getElementById('jobSalary').value = '';
+        document.getElementById('jobCity').value = '';
+        await loadJobs();
+        selectJob(data.job_id);
+    } catch (e) { alert('网络错误 / Network error'); }
+    finally { btn.disabled = false; btn.textContent = 'CREATE POSITION / 创建岗位'; }
+});
+
+const uploadZone = document.getElementById('uploadZone');
+const fileInput = document.getElementById('fileInput');
+
+uploadZone.addEventListener('click', () => fileInput.click());
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+uploadZone.addEventListener('drop', e => {
+    e.preventDefault(); uploadZone.classList.remove('dragover');
+    if (e.dataTransfer.files.length) uploadFiles(e.dataTransfer.files);
+});
+fileInput.addEventListener('change', () => { if (fileInput.files.length) uploadFiles(fileInput.files); });
+
+async function uploadFiles(files) {
+    if (!currentJobId) { alert('请先选择岗位 / Please select a job position first'); return; }
+
+    const progressArea = document.getElementById('progressArea');
+    const progressFill = document.getElementById('progressFill');
+    const progressText = document.getElementById('progressText');
+    progressArea.classList.add('active');
+    progressFill.style.width = '0%';
+    progressText.textContent = `ANALYZING 0/${files.length}... / 分析中 0/${files.length}...`;
+
+    const formData = new FormData();
+    for (const f of files) formData.append('files', f);
+
+    try {
+        const res = await fetch(`/api/hr/jobs/${currentJobId}/upload`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: formData
+        });
+
+        const data = await res.json();
+        if (!res.ok) { alert(data.error || '上传失败 / Upload failed'); return; }
+
+        progressFill.style.width = '100%';
+        progressText.textContent = `ANALYZED ${data.results.length} RESUMES / 已分析 ${data.results.length} 份简历`;
+
+        const valid = data.results.filter(r => !r.error);
+        const errors = data.results.filter(r => r.error);
+
+        screenings = valid.map(r => ({
+            id: r.screening_id,
+            filename: r.filename,
+            name: r.name || r.filename,
+            phone: r.phone || '',
+            email: r.email || '',
+            match_score: r.match_score || 0,
+            skill_match: r.skill_match || '',
+            matched_skills: r.matched_skills || [],
+            missing_skills: r.missing_skills || [],
+            summary: r.summary || '',
+            recommendation: r.recommendation || 'neutral',
+            status: r.status || 'neutral',
+            sms_sent: false
+        }));
+
+        renderResults();
+
+        if (errors.length) {
+            alert(`${errors.length} 个文件失败 / files failed: ${errors.map(e => e.filename).join(', ')}`);
+        }
+
+        setTimeout(() => progressArea.classList.remove('active'), 3000);
+    } catch (e) {
+        alert('上传错误 / Upload error: ' + e.message);
+        progressArea.classList.remove('active');
+    }
+}
+
+function renderResults() {
+    const area = document.getElementById('resultsArea');
+    if (!screenings.length) {
+        area.innerHTML = '<div class="empty-state"><div class="icon">🔍</div><p>UPLOAD RESUMES TO START SCREENING</p><p class="zh">上传简历开始筛选</p></div>';
+        return;
+    }
+
+    const sorted = [...screenings].sort((a, b) => b.match_score - a.match_score);
+
+    area.innerHTML = `
+        <table class="results-table">
+            <thead>
+                <tr>
+                    <th>CANDIDATE<span class="th-zh">候选人</span></th>
+                    <th>SCORE<span class="th-zh">匹配度</span></th>
+                    <th>SKILLS MATCHED<span class="th-zh">匹配技能</span></th>
+                    <th>SKILLS MISSING<span class="th-zh">缺失技能</span></th>
+                    <th>SUMMARY<span class="th-zh">摘要</span></th>
+                    <th>ACTION<span class="th-zh">操作</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                ${sorted.map(s => {
+                    const scoreClass = s.match_score >= 70 ? 'high' : s.match_score >= 40 ? 'mid' : 'low';
+                    let recLabel = '— NEUTRAL / 待定';
+                    let recClass = '';
+                    if (s.recommendation === 'recommend') { recLabel = '✓ RECOMMEND / 推荐'; recClass = 'recommend'; }
+                    else if (s.recommendation === 'reject') { recLabel = '✗ REJECT / 不推荐'; recClass = 'reject'; }
+                    return `<tr>
+                        <td>
+                            <div style="font-weight:700;letter-spacing:0.5px;font-size:14px">${s.name}</div>
+                            <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${s.phone || '无电话 / No phone'} | ${s.email || '无邮箱 / No email'}</div>
+                        </td>
+                        <td><span class="score-badge ${scoreClass}">${s.match_score}%</span><span class="rec-label ${recClass}">${recLabel}</span></td>
+                        <td>${(s.matched_skills || []).map(sk => `<span class="skill-tag match">${sk}</span>`).join('')}</td>
+                        <td>${(s.missing_skills || []).map(sk => `<span class="skill-tag miss">${sk}</span>`).join('')}</td>
+                        <td style="max-width:240px;font-size:12px;color:var(--text-muted);line-height:1.5">${s.summary}</td>
+                        <td>
+                            ${s.sms_sent
+                                ? '<span style="font-size:11px;color:var(--eva-green)">SMS SENT ✓ / 已发送</span>'
+                                : `<button class="btn-sm green" onclick="openSmsModal(${s.id})">SMS / 短信</button>`
+                            }
+                        </td>
+                    </tr>`;
+                }).join('')}
+            </tbody>
+        </table>
+    `;
+}
+
+async function loadScreenings(jobId) {
+    currentJobId = jobId;
+    document.getElementById('uploadSection').style.display = '';
+    document.querySelectorAll('.job-card').forEach(c => c.classList.toggle('active', parseInt(c.dataset.id) === jobId));
+
+    const res = await fetch(`/api/hr/jobs/${jobId}/screenings`, { headers });
+    const data = await res.json();
+
+    screenings = (data.screenings || []).map(s => ({
+        id: s.id,
+        filename: s.filename,
+        name: s.candidate_name || s.filename,
+        phone: s.phone || '',
+        email: s.email || '',
+        match_score: s.match_score || 0,
+        skill_match: s.skill_match || '',
+        matched_skills: (s.analysis || {}).matched_skills || [],
+        missing_skills: (s.analysis || {}).missing_skills || [],
+        summary: (s.analysis || {}).summary || '',
+        recommendation: (s.analysis || {}).recommendation || 'neutral',
+        status: s.status || 'neutral',
+        sms_sent: s.sms_sent === 1
+    }));
+
+    renderResults();
+}
+
+let currentSmsId = null;
+
+function openSmsModal(screeningId) {
+    currentSmsId = screeningId;
+    const s = screenings.find(x => x.id === screeningId);
+    if (!s) return;
+    document.getElementById('smsCandidateName').textContent = s.name;
+    document.getElementById('smsCandidatePhone').textContent = s.phone || 'N/A';
+    document.getElementById('smsContent').value = '';
+    document.getElementById('smsModal').classList.add('active');
+}
+
+document.getElementById('btnCloseSms').addEventListener('click', () => {
+    document.getElementById('smsModal').classList.remove('active');
+});
+
+document.getElementById('btnGenerateSms').addEventListener('click', async () => {
+    const btn = document.getElementById('btnGenerateSms');
+    btn.disabled = true; btn.textContent = 'GENERATING... / 生成中...';
+    try {
+        const res = await fetch(`/api/hr/screenings/${currentSmsId}/sms`, {
+            method: 'POST', headers,
+            body: JSON.stringify({})
+        });
+        const data = await res.json();
+        if (data.sms_content) document.getElementById('smsContent').value = data.sms_content;
+    } catch (e) { alert('生成失败 / Generation failed'); }
+    finally { btn.disabled = false; btn.textContent = 'AI GENERATE / AI生成'; }
+});
+
+document.getElementById('btnSendSms').addEventListener('click', async () => {
+    const smsContent = document.getElementById('smsContent').value.trim();
+    if (!smsContent) { alert('请输入短信内容 / Please enter SMS content'); return; }
+
+    const btn = document.getElementById('btnSendSms');
+    btn.disabled = true; btn.textContent = 'SENDING... / 发送中...';
+    try {
+        const res = await fetch(`/api/hr/screenings/${currentSmsId}/sms`, {
+            method: 'POST', headers,
+            body: JSON.stringify({ sms_content: smsContent })
+        });
+        const data = await res.json();
+        const s = screenings.find(x => x.id === currentSmsId);
+        if (s) s.sms_sent = true;
+        renderResults();
+        document.getElementById('smsModal').classList.remove('active');
+    } catch (e) { alert('发送失败 / Send failed'); }
+    finally { btn.disabled = false; btn.textContent = 'SEND SMS / 发送短信'; }
+});
+
+loadJobs();
+</script>
+</body>
+</html>

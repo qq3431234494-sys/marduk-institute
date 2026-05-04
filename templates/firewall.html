@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MAGI SYSTEM - FIREWALL TYPE-B</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-deep: #0b0b14;
+            --eva-red: #ff2d2d;
+            --eva-red-dim: rgba(255, 45, 45, 0.12);
+            --eva-red-glow: rgba(255, 45, 45, 0.4);
+            --eva-green: #39ff14;
+            --eva-green-dim: rgba(57, 255, 20, 0.1);
+            --eva-green-glow: rgba(57, 255, 20, 0.3);
+            --eva-amber: #ffb800;
+            --eva-amber-dim: rgba(255, 184, 0, 0.12);
+            --nerv-orange: #ff6b2b;
+            --eva-purple: #b14aed;
+            --text-primary: #e8e8f0;
+            --text-muted: rgba(232, 232, 240, 0.28);
+            --mono: 'JetBrains Mono', 'Courier New', monospace;
+            --sans: 'Inter', -apple-system, sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--sans);
+            background: var(--bg-deep);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 1.5s ease;
+        }
+
+        body.recovered { background: #060d06; }
+
+        .bg-canvas { position: fixed; inset: 0; z-index: 0; overflow: hidden; }
+
+        .bg-grid {
+            position: absolute; inset: 0;
+            background-image:
+                linear-gradient(rgba(255,45,45,0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,45,45,0.04) 1px, transparent 1px);
+            background-size: 32px 32px;
+            animation: gridShift 0.5s linear infinite;
+        }
+
+        body.recovered .bg-grid {
+            background-image:
+                linear-gradient(rgba(57,255,20,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(57,255,20,0.03) 1px, transparent 1px);
+            animation: none;
+        }
+
+        @keyframes gridShift {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(32px, 32px); }
+        }
+
+        .scan-line {
+            position: absolute; inset: 0;
+            background: repeating-linear-gradient(
+                0deg, transparent, transparent 2px,
+                rgba(255,45,45,0.06) 2px, rgba(255,45,45,0.06) 4px
+            );
+            pointer-events: none; z-index: 1;
+            transition: background 1.5s ease;
+        }
+
+        body.recovered .scan-line {
+            background: repeating-linear-gradient(
+                0deg, transparent, transparent 2px,
+                rgba(57,255,20,0.03) 2px, rgba(57,255,20,0.03) 4px
+            );
+        }
+
+        .alert-flash {
+            position: absolute; inset: 0;
+            background: rgba(255, 45, 45, 0.03);
+            animation: alertFlash 1.5s ease-in-out infinite;
+            z-index: 1;
+            transition: opacity 1.5s ease;
+        }
+
+        body.recovered .alert-flash { animation: none; opacity: 0; }
+
+        @keyframes alertFlash {
+            0%, 100% { opacity: 0; }
+            50% { opacity: 1; }
+        }
+
+        .hex-ring {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 500px; height: 500px; z-index: 1;
+        }
+
+        .hex-ring svg {
+            width: 100%; height: 100%;
+            animation: hexSpin 20s linear infinite;
+            transition: opacity 1.5s ease;
+        }
+
+        body.recovered .hex-ring svg { opacity: 0.1; }
+
+        @keyframes hexSpin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .firewall-container {
+            position: relative; z-index: 10;
+            text-align: center;
+            max-width: 820px; padding: 20px;
+            width: 100%;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .firewall-container::-webkit-scrollbar { width: 3px; }
+        .firewall-container::-webkit-scrollbar-track { background: transparent; }
+        .firewall-container::-webkit-scrollbar-thumb { background: rgba(255,45,45,0.3); }
+        body.recovered .firewall-container::-webkit-scrollbar-thumb { background: rgba(57,255,20,0.3); }
+
+        .firewall-container.recovered-state .status-lines,
+        .firewall-container.recovered-state .vote-panel {
+            display: none;
+        }
+
+        .firewall-container.recovered-state .magi-topo { margin-bottom: 16px; }
+
+        .fw-badge {
+            display: inline-block;
+            padding: 4px 16px;
+            background: var(--eva-red);
+            color: var(--bg-deep);
+            font-family: var(--mono);
+            font-size: 11px; font-weight: 800;
+            letter-spacing: 3px;
+            margin-bottom: 20px;
+            animation: badgePulse 0.8s ease-in-out infinite;
+            transition: all 1.5s ease;
+        }
+
+        body.recovered .fw-badge {
+            background: var(--eva-green);
+            animation: none;
+            box-shadow: 0 0 20px var(--eva-green-glow);
+        }
+
+        @keyframes badgePulse {
+            0%, 100% { box-shadow: 0 0 10px var(--eva-red-glow); }
+            50% { box-shadow: 0 0 30px var(--eva-red-glow), 0 0 60px var(--eva-red-dim); }
+        }
+
+        .fw-title {
+            font-family: var(--mono);
+            font-size: 26px; font-weight: 800;
+            color: var(--eva-red);
+            letter-spacing: 4px;
+            text-shadow: 0 0 20px var(--eva-red-glow);
+            margin-bottom: 6px;
+            transition: all 1.5s ease;
+        }
+
+        body.recovered .fw-title {
+            color: var(--eva-green);
+            text-shadow: 0 0 20px var(--eva-green-glow);
+        }
+
+        .fw-subtitle {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--eva-amber);
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+            transition: all 1.5s ease;
+        }
+
+        body.recovered .fw-subtitle { color: var(--eva-green); }
+
+        .magi-topo {
+            position: relative;
+            width: 100%; max-width: 780px;
+            aspect-ratio: 2 / 1;
+            margin: 0 auto 20px;
+        }
+
+        .magi-topo svg { width: 100%; height: 100%; }
+
+        #worldMap path { fill: rgba(255,45,45,0.06); stroke: rgba(255,45,45,0.2); stroke-width: 0.5; stroke-linejoin: round; transition: all 1.5s ease; }
+        body.recovered #worldMap path { fill: rgba(57,255,20,0.04); stroke: rgba(57,255,20,0.15); }
+
+        .map-grid-line { stroke: rgba(255,45,45,0.06); stroke-width: 0.3; transition: stroke 1.5s ease; }
+        body.recovered .map-grid-line { stroke: rgba(57,255,20,0.04); }
+
+        .map-label { fill: rgba(255,45,45,0.25); font-family: var(--mono); font-size: 5px; transition: fill 1.5s ease; }
+        body.recovered .map-label { fill: rgba(57,255,20,0.15); }
+
+        .topo-link { transition: all 0.8s ease; fill: none; }
+        .topo-link.breached { stroke: var(--eva-red); stroke-width: 1.5; filter: url(#glowRed); }
+        .topo-link.sealing { stroke: var(--eva-amber); stroke-width: 1.5; filter: url(#glowAmber); }
+        .topo-link.sealed { stroke: var(--eva-green); stroke-width: 1.5; filter: url(#glowGreen); }
+        .topo-link.counter { stroke: var(--eva-green); stroke-width: 1.5; filter: url(#glowGreen); stroke-dasharray: 6 3; }
+
+        .data-particle { transition: all 0.8s ease; }
+        .data-particle.breached { fill: var(--eva-red); filter: url(#glowRedStrong); }
+        .data-particle.sealing { fill: var(--eva-amber); filter: url(#glowAmberStrong); }
+        .data-particle.sealed { fill: var(--eva-green); filter: url(#glowGreenStrong); }
+        .data-particle.counter { fill: var(--eva-green); filter: url(#glowGreenStrong); }
+
+        .node-pulse-ring, .node-dash-ring, .topo-node, .node-core-glow {
+            transform-box: fill-box;
+            transform-origin: center;
+        }
+
+        .node-pulse-ring { transition: all 0.8s ease; fill: none; }
+        .node-pulse-ring.breached { stroke: var(--eva-red); animation: pulseCircleBreach 1.5s ease-out infinite; }
+        .node-pulse-ring.sealing { stroke: var(--eva-amber); animation: pulseCircleSeal 2s ease-out infinite; }
+        .node-pulse-ring.sealed { stroke: var(--eva-green); animation: pulseCircleSealed 2.5s ease-out infinite; }
+        .node-pulse-ring.online { stroke: var(--eva-green); animation: pulseCircleSealed 2.5s ease-out infinite; }
+        .node-pulse-ring.captured { stroke: var(--eva-green); animation: pulseCircleSealed 2.5s ease-out infinite; }
+
+        @keyframes pulseCircleBreach { 0% { opacity: 0.8; stroke-width: 2; transform: scale(1); } 100% { opacity: 0; stroke-width: 0.5; transform: scale(2); } }
+        @keyframes pulseCircleSeal { 0% { opacity: 0.6; stroke-width: 1.5; transform: scale(1); } 100% { opacity: 0; stroke-width: 0.3; transform: scale(1.7); } }
+        @keyframes pulseCircleSealed { 0% { opacity: 0.4; stroke-width: 1; transform: scale(1); } 100% { opacity: 0; stroke-width: 0.2; transform: scale(1.4); } }
+
+        .node-dash-ring { transition: all 0.8s ease; fill: none; }
+        .node-dash-ring.breached { stroke: var(--eva-red); stroke-width: 0.6; stroke-dasharray: 3 2; animation: dashMarchBreach 1s linear infinite; filter: url(#glowRed); }
+        .node-dash-ring.sealing { stroke: var(--eva-amber); stroke-width: 0.6; stroke-dasharray: 3 2; animation: dashMarchSeal 1.5s linear infinite; filter: url(#glowAmber); }
+        .node-dash-ring.sealed { stroke: var(--eva-green); stroke-width: 0.6; stroke-dasharray: 3 2; animation: dashMarchSealed 2s linear infinite; filter: url(#glowGreen); }
+        .node-dash-ring.online { stroke: var(--eva-green); stroke-width: 0.6; stroke-dasharray: 3 2; animation: dashMarchSealed 2s linear infinite; filter: url(#glowGreen); }
+        .node-dash-ring.captured { stroke: var(--eva-green); stroke-width: 0.6; stroke-dasharray: 3 2; animation: dashMarchSealed 2s linear infinite; filter: url(#glowGreen); }
+
+        @keyframes dashMarchBreach { from { stroke-dashoffset: 0; } to { stroke-dashoffset: -10; } }
+        @keyframes dashMarchSeal { from { stroke-dashoffset: 0; } to { stroke-dashoffset: 10; } }
+        @keyframes dashMarchSealed { from { stroke-dashoffset: 0; } to { stroke-dashoffset: -10; } }
+
+        .node-core-glow { transition: all 0.8s ease; }
+        .node-core-glow.breached { fill: var(--eva-red); filter: url(#glowRedStrong); animation: coreGlowBreach 1s ease-in-out infinite alternate; }
+        .node-core-glow.sealing { fill: var(--eva-amber); filter: url(#glowAmberStrong); animation: coreGlowSeal 1.5s ease-in-out infinite alternate; }
+        .node-core-glow.sealed { fill: var(--eva-green); filter: url(#glowGreenStrong); animation: coreGlowSealed 2s ease-in-out infinite alternate; }
+        .node-core-glow.online { fill: var(--eva-green); filter: url(#glowGreenStrong); animation: coreGlowSealed 2s ease-in-out infinite alternate; }
+        .node-core-glow.captured { fill: var(--eva-green); filter: url(#glowGreenStrong); animation: coreGlowSealed 2s ease-in-out infinite alternate; }
+
+        @keyframes coreGlowBreach { 0% { opacity: 0.2; } 100% { opacity: 0.7; } }
+        @keyframes coreGlowSeal { 0% { opacity: 0.2; } 100% { opacity: 0.5; } }
+        @keyframes coreGlowSealed { 0% { opacity: 0.15; } 100% { opacity: 0.4; } }
+
+        .breach-spark { fill: var(--eva-red); filter: url(#glowRedStrong); animation: sparkBreach 0.3s ease-in-out infinite alternate; }
+        @keyframes sparkBreach { 0% { opacity: 0.3; r: 1; } 100% { opacity: 1; r: 2; } }
+
+        .pipeline-grid {
+            position: fixed; top: 50%; left: 16px;
+            transform: translateY(-50%);
+            display: flex; flex-direction: column; gap: 4px;
+            z-index: 10; max-width: 200px;
+        }
+
+        .pipe-row {
+            display: flex; align-items: center; gap: 6px;
+            padding: 3px 8px; background: rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.03);
+            font-family: var(--mono); font-size: 8px;
+            letter-spacing: 0.5px; transition: all 0.8s ease;
+        }
+
+        .pipe-status { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; transition: all 0.8s ease; }
+        .pipe-row.breached .pipe-status { background: var(--eva-red); box-shadow: 0 0 6px var(--eva-red-glow); animation: pipeBlink 0.6s ease-in-out infinite alternate; }
+        .pipe-row.sealing .pipe-status { background: var(--eva-amber); box-shadow: 0 0 6px rgba(255,184,0,0.4); animation: pipeBlink 1.2s ease-in-out infinite alternate; }
+        .pipe-row.sealed .pipe-status { background: var(--eva-green); box-shadow: 0 0 6px var(--eva-green-glow); }
+        .pipe-row.counter .pipe-status { background: var(--eva-green); box-shadow: 0 0 6px var(--eva-green-glow); }
+        @keyframes pipeBlink { 0% { opacity: 0.4; } 100% { opacity: 1; } }
+
+        .pipe-row.breached { border-color: rgba(255,45,45,0.15); }
+        .pipe-row.sealing { border-color: rgba(255,184,0,0.15); }
+        .pipe-row.sealed { border-color: rgba(57,255,20,0.1); }
+        .pipe-row.counter { border-color: rgba(57,255,20,0.1); }
+
+        .pipe-name { color: var(--text-muted); min-width: 32px; }
+        .pipe-route { color: var(--eva-purple); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .pipe-label { font-weight: 700; letter-spacing: 1px; min-width: 56px; text-align: right; }
+        .pipe-row.breached .pipe-label { color: var(--eva-red); }
+        .pipe-row.sealing .pipe-label { color: var(--eva-amber); }
+        .pipe-row.sealed .pipe-label { color: var(--eva-green); }
+        .pipe-row.counter .pipe-label { color: var(--eva-green); }
+
+        .status-lines { font-family: var(--mono); font-size: 10px; color: var(--text-muted); letter-spacing: 0.5px; line-height: 1.8; margin-bottom: 16px; text-align: left; padding: 0 20px; }
+        .status-lines .line-active { color: var(--eva-red); }
+        .status-lines .line-ok { color: var(--eva-green); }
+        .status-lines .line-warn { color: var(--eva-amber); }
+
+        .magi-engines { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+
+        .magi-eng {
+            padding: 6px 12px; border: 1px solid;
+            font-family: var(--mono); font-size: 9px; font-weight: 700;
+            letter-spacing: 1px; transition: all 0.8s ease;
+            position: relative; overflow: hidden;
+        }
+
+        .magi-eng.online { border-color: var(--eva-green); background: var(--eva-green-dim); color: var(--eva-green); box-shadow: 0 0 12px var(--eva-green-glow); }
+        .magi-eng.online::after { content: ''; position: absolute; inset: 0; background: var(--eva-green); opacity: 0; animation: engRecoverFlash 0.6s ease-out; }
+        @keyframes engRecoverFlash { 0% { opacity: 0.4; } 100% { opacity: 0; } }
+
+        .magi-eng.compromised { border-color: var(--eva-red); background: var(--eva-red-dim); color: var(--eva-red); animation: engCompromised 1.5s ease-in-out infinite; }
+        .magi-eng.defending { border-color: var(--eva-amber); background: var(--eva-amber-dim); color: var(--eva-amber); animation: engDefending 1s ease-in-out infinite; }
+        .magi-eng.counter-attack { border-color: var(--eva-green); background: var(--eva-green-dim); color: var(--eva-green); animation: engDefending 0.8s ease-in-out infinite; }
+
+        @keyframes engCompromised { 0%, 100% { box-shadow: 0 0 6px var(--eva-red-dim); } 50% { box-shadow: 0 0 16px var(--eva-red-glow); } }
+        @keyframes engDefending { 0%, 100% { box-shadow: 0 0 6px var(--eva-amber-dim); } 50% { box-shadow: 0 0 16px rgba(255,184,0,0.3); } }
+
+        .btn-continue {
+            display: none; padding: 12px 32px;
+            background: var(--eva-green); color: var(--bg-deep); border: none;
+            font-family: var(--mono); font-size: 13px; font-weight: 800;
+            letter-spacing: 3px; cursor: pointer; transition: all 0.3s ease;
+            box-shadow: 0 0 20px var(--eva-green-glow);
+        }
+        .btn-continue:hover { background: #5fff3a; box-shadow: 0 0 30px var(--eva-green-glow), 0 0 50px var(--eva-green-dim); }
+        .btn-continue.visible { display: inline-block; animation: btnAppear 0.5s ease; }
+        @keyframes btnAppear { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+
+        .attack-log {
+            position: fixed; bottom: 16px; left: 16px; right: 16px;
+            max-height: 70px; overflow: hidden;
+            font-family: var(--mono); font-size: 9px;
+            color: var(--eva-red); letter-spacing: 0.3px; line-height: 1.6;
+            opacity: 0.6; z-index: 10;
+            transition: color 1.5s ease, opacity 1.5s ease;
+        }
+        body.recovered .attack-log { color: var(--eva-green); opacity: 0.4; }
+        .attack-log div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        .vote-panel {
+            position: fixed; top: 50%; right: 16px;
+            transform: translateY(-50%);
+            width: 220px; z-index: 20;
+            background: rgba(0,0,0,0.7);
+            border: 1px solid rgba(255,45,45,0.2);
+            transition: all 1.5s ease;
+        }
+        body.recovered .vote-panel { border-color: rgba(57,255,20,0.15); opacity: 0.3; pointer-events: none; }
+
+        .vote-header {
+            padding: 6px 10px;
+            background: rgba(255,45,45,0.1);
+            border-bottom: 1px solid rgba(255,45,45,0.15);
+            font-family: var(--mono); font-size: 8px; font-weight: 700;
+            color: var(--eva-red); letter-spacing: 1.5px;
+            display: flex; align-items: center; justify-content: space-between;
+            transition: all 1.5s ease;
+        }
+        body.recovered .vote-header { background: rgba(57,255,20,0.05); color: var(--eva-green); border-color: rgba(57,255,20,0.1); }
+
+        .vote-header-live {
+            display: inline-block; width: 5px; height: 5px; border-radius: 50%;
+            background: var(--eva-red); box-shadow: 0 0 6px var(--eva-red-glow);
+            animation: voteLivePulse 1s ease-in-out infinite;
+        }
+        body.recovered .vote-header-live { background: var(--eva-green); box-shadow: 0 0 6px var(--eva-green-glow); animation: none; }
+        @keyframes voteLivePulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+        .vote-body { padding: 8px 10px; }
+
+        .vote-proposal {
+            font-family: var(--mono); font-size: 8px; font-weight: 700;
+            color: var(--eva-amber); letter-spacing: 1px;
+            padding: 4px 6px; margin-bottom: 8px;
+            background: rgba(255,184,0,0.08);
+            border-left: 2px solid var(--eva-amber);
+            animation: proposalFlash 2s ease-in-out infinite;
+        }
+        @keyframes proposalFlash { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
+
+        .vote-row {
+            display: flex; align-items: center; gap: 6px;
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+            font-family: var(--mono); font-size: 8px; letter-spacing: 0.5px;
+        }
+        .vote-row:last-child { border-bottom: none; }
+
+        .vote-eng-name { color: var(--eva-purple); font-weight: 700; min-width: 72px; }
+
+        .vote-badge {
+            padding: 1px 6px; font-weight: 700; font-size: 7px; letter-spacing: 1px;
+            border: 1px solid; transition: all 0.5s ease;
+        }
+        .vote-badge.approve { color: var(--eva-red); border-color: var(--eva-red); background: var(--eva-red-dim); }
+        .vote-badge.reject { color: var(--eva-green); border-color: var(--eva-green); background: var(--eva-green-dim); }
+        .vote-badge.pending { color: var(--eva-amber); border-color: var(--eva-amber); background: var(--eva-amber-dim); animation: pendingBlink 0.8s ease-in-out infinite; }
+        @keyframes pendingBlink { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+        .vote-result {
+            margin-top: 8px; padding: 6px; text-align: center;
+            font-family: var(--mono); font-size: 9px; font-weight: 700;
+            letter-spacing: 1.5px; border: 1px solid;
+            transition: all 0.5s ease;
+        }
+        .vote-result.rejected { color: var(--eva-green); border-color: rgba(57,255,20,0.3); background: var(--eva-green-dim); }
+        .vote-result.approved { color: var(--eva-red); border-color: rgba(255,45,45,0.3); background: var(--eva-red-dim); animation: approvedFlash 0.5s ease-in-out infinite; }
+        @keyframes approvedFlash { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+        .vote-log {
+            margin-top: 6px; max-height: 60px; overflow: hidden;
+            font-family: var(--mono); font-size: 7px;
+            color: var(--text-muted); line-height: 1.6;
+        }
+        .vote-log div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .vote-log .log-approve { color: var(--eva-red); }
+        .vote-log .log-reject { color: var(--eva-green); }
+        .vote-log .log-propose { color: var(--eva-amber); }
+
+        @media (max-width: 768px) {
+            .pipeline-grid, .vote-panel { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-canvas">
+        <div class="bg-grid"></div>
+        <div class="scan-line"></div>
+        <div class="alert-flash"></div>
+        <div class="hex-ring">
+            <svg viewBox="0 0 200 200" fill="none">
+                <polygon points="100,10 180,55 180,145 100,190 20,145 20,55" stroke="rgba(255,45,45,0.15)" stroke-width="1"/>
+                <polygon points="100,30 160,65 160,135 100,170 40,135 40,65" stroke="rgba(255,45,45,0.1)" stroke-width="0.5"/>
+                <polygon points="100,50 140,75 140,125 100,150 60,125 60,75" stroke="rgba(255,45,45,0.08)" stroke-width="0.5"/>
+            </svg>
+        </div>
+    </div>
+
+    <div class="firewall-container">
+        <div class="fw-badge" id="fwBadge">FIREWALL TYPE-B ACTIVE</div>
+        <div class="fw-title" id="fwTitle">INTRUSION DETECTED</div>
+        <div class="fw-subtitle" id="fwSubtitle">MAGI[CANTON] UNDER COORDINATED ATTACK BY EXTERNAL MAGI SYSTEMS</div>
+
+        <div class="magi-topo">
+            <svg viewBox="0 0 800 400" fill="none">
+                <defs>
+                    <filter id="glowRed" x="-50%" y="-50%" width="200%" height="200%">
+                        <feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                    </filter>
+                    <filter id="glowRedStrong" x="-50%" y="-50%" width="200%" height="200%">
+                        <feGaussianBlur stdDeviation="5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                    </filter>
+                    <filter id="glowAmber" x="-50%" y="-50%" width="200%" height="200%">
+                        <feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                    </filter>
+                    <filter id="glowAmberStrong" x="-50%" y="-50%" width="200%" height="200%">
+                        <feGaussianBlur stdDeviation="5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                    </filter>
+                    <filter id="glowGreen" x="-50%" y="-50%" width="200%" height="200%">
+                        <feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                    </filter>
+                    <filter id="glowGreenStrong" x="-50%" y="-50%" width="200%" height="200%">
+                        <feGaussianBlur stdDeviation="5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                    </filter>
+                    <path id="pathTKToCA" d="M709,122 Q680,100 651,149"/>
+                    <path id="pathBLToCA" d="M429,84 Q540,30 651,149"/>
+                    <path id="pathMAToCA" d="M242,107 Q446,10 651,149"/>
+                    <path id="pathTKToBL" d="M709,122 Q569,20 429,84"/>
+                    <path id="pathBLToMA" d="M429,84 Q336,30 242,107"/>
+                    <path id="pathTKToMA" d="M709,122 Q476,10 242,107"/>
+                </defs>
+
+                <g class="map-grid">
+                    <line class="map-grid-line" x1="0" y1="33" x2="800" y2="33"/>
+                    <line class="map-grid-line" x1="0" y1="67" x2="800" y2="67"/>
+                    <line class="map-grid-line" x1="0" y1="100" x2="800" y2="100"/>
+                    <line class="map-grid-line" x1="0" y1="133" x2="800" y2="133"/>
+                    <line class="map-grid-line" x1="0" y1="167" x2="800" y2="167"/>
+                    <line class="map-grid-line" x1="0" y1="200" x2="800" y2="200" style="stroke-width:0.6;"/>
+                    <line class="map-grid-line" x1="0" y1="233" x2="800" y2="233"/>
+                    <line class="map-grid-line" x1="0" y1="267" x2="800" y2="267"/>
+                    <line class="map-grid-line" x1="0" y1="300" x2="800" y2="300"/>
+                    <line class="map-grid-line" x1="0" y1="333" x2="800" y2="333"/>
+                    <line class="map-grid-line" x1="0" y1="367" x2="800" y2="367"/>
+                    <line class="map-grid-line" x1="67" y1="0" x2="67" y2="400"/>
+                    <line class="map-grid-line" x1="133" y1="0" x2="133" y2="400"/>
+                    <line class="map-grid-line" x1="200" y1="0" x2="200" y2="400"/>
+                    <line class="map-grid-line" x1="267" y1="0" x2="267" y2="400"/>
+                    <line class="map-grid-line" x1="333" y1="0" x2="333" y2="400"/>
+                    <line class="map-grid-line" x1="400" y1="0" x2="400" y2="400" style="stroke-width:0.6;"/>
+                    <line class="map-grid-line" x1="467" y1="0" x2="467" y2="400"/>
+                    <line class="map-grid-line" x1="533" y1="0" x2="533" y2="400"/>
+                    <line class="map-grid-line" x1="600" y1="0" x2="600" y2="400"/>
+                    <line class="map-grid-line" x1="667" y1="0" x2="667" y2="400"/>
+                    <line class="map-grid-line" x1="733" y1="0" x2="733" y2="400"/>
+                </g>
+                <text class="map-label" x="4" y="36">60°N</text>
+                <text class="map-label" x="4" y="70">45°N</text>
+                <text class="map-label" x="4" y="103">30°N</text>
+                <text class="map-label" x="4" y="136">15°N</text>
+                <text class="map-label" x="4" y="203">0°</text>
+                <text class="map-label" x="4" y="270">30°S</text>
+                <text class="map-label" x="64" y="396">120°W</text>
+                <text class="map-label" x="130" y="396">90°W</text>
+                <text class="map-label" x="197" y="396">60°W</text>
+                <text class="map-label" x="264" y="396">30°W</text>
+                <text class="map-label" x="397" y="396">0°</text>
+                <text class="map-label" x="530" y="396">60°E</text>
+                <text class="map-label" x="597" y="396">90°E</text>
+                <text class="map-label" x="664" y="396">120°E</text>
+                <text class="map-label" x="730" y="396">150°E</text>
+
+                <g id="worldMap" transform="scale(0.4,0.467)"></g>
+
+                <path class="topo-link" id="linkTKToCA" d="M709,122 Q680,100 651,149"/>
+                <path class="topo-link" id="linkBLToCA" d="M429,84 Q540,30 651,149"/>
+                <path class="topo-link" id="linkMAToCA" d="M242,107 Q446,10 651,149"/>
+                <path class="topo-link" id="linkTKToBL" d="M709,122 Q569,20 429,84"/>
+                <path class="topo-link" id="linkBLToMA" d="M429,84 Q336,30 242,107"/>
+                <path class="topo-link" id="linkTKToMA" d="M709,122 Q476,10 242,107"/>
+
+                <g id="sparkGroup" style="display:none">
+                    <circle class="breach-spark" cx="680" cy="120" r="1.5"/>
+                    <circle class="breach-spark" cx="540" cy="70" r="1"/>
+                    <circle class="breach-spark" cx="446" cy="50" r="1.5"/>
+                    <circle class="breach-spark" cx="569" cy="55" r="1"/>
+                    <circle class="breach-spark" cx="336" cy="50" r="1.5"/>
+                    <circle class="breach-spark" cx="476" cy="40" r="1"/>
+                </g>
+
+                <g id="dataParticles" style="display:none">
+                    <circle class="data-particle breached" r="2.5"><animateMotion dur="1.5s" repeatCount="indefinite"><mpath href="#pathTKToCA"/></animateMotion></circle>
+                    <circle class="data-particle breached" r="2"><animateMotion dur="1.5s" begin="0.75s" repeatCount="indefinite"><mpath href="#pathTKToCA"/></animateMotion></circle>
+                    <circle class="data-particle breached" r="2.5"><animateMotion dur="2.5s" repeatCount="indefinite"><mpath href="#pathBLToCA"/></animateMotion></circle>
+                    <circle class="data-particle breached" r="2"><animateMotion dur="2.5s" begin="1.25s" repeatCount="indefinite"><mpath href="#pathBLToCA"/></animateMotion></circle>
+                    <circle class="data-particle breached" r="2.5"><animateMotion dur="3s" repeatCount="indefinite"><mpath href="#pathMAToCA"/></animateMotion></circle>
+                    <circle class="data-particle breached" r="2"><animateMotion dur="3s" begin="1.5s" repeatCount="indefinite"><mpath href="#pathMAToCA"/></animateMotion></circle>
+                    <circle class="data-particle breached" r="2"><animateMotion dur="2.5s" repeatCount="indefinite"><mpath href="#pathTKToBL"/></animateMotion></circle>
+                    <circle class="data-particle breached" r="1.5"><animateMotion dur="2.5s" begin="1.25s" repeatCount="indefinite"><mpath href="#pathTKToBL"/></animateMotion></circle>
+                    <circle class="data-particle breached" r="2"><animateMotion dur="1.8s" repeatCount="indefinite"><mpath href="#pathBLToMA"/></animateMotion></circle>
+                    <circle class="data-particle breached" r="1.5"><animateMotion dur="1.8s" begin="0.9s" repeatCount="indefinite"><mpath href="#pathBLToMA"/></animateMotion></circle>
+                    <circle class="data-particle breached" r="2"><animateMotion dur="4s" repeatCount="indefinite"><mpath href="#pathTKToMA"/></animateMotion></circle>
+                    <circle class="data-particle breached" r="1.5"><animateMotion dur="4s" begin="2s" repeatCount="indefinite"><mpath href="#pathTKToMA"/></animateMotion></circle>
+                </g>
+
+                <g id="nodeCA">
+                    <circle class="node-pulse-ring online" cx="651" cy="149" r="18"/>
+                    <circle class="node-pulse-ring online" cx="651" cy="149" r="18" style="animation-delay: 0.9s;"/>
+                    <circle class="node-dash-ring online" cx="651" cy="149" r="14"/>
+                    <circle class="topo-node" cx="651" cy="149" r="6" fill="rgba(57,255,20,0.15)" stroke="var(--eva-green)" stroke-width="1.5" id="circleCA"/>
+                    <circle class="node-core-glow online" cx="651" cy="149" r="6" id="coreCA"/>
+                    <text x="651" y="172" text-anchor="middle" fill="var(--eva-green)" font-family="var(--mono)" font-size="7" font-weight="700">MAGI[CANTON]</text>
+                </g>
+
+                <g id="nodeTK">
+                    <circle class="node-pulse-ring online" cx="709" cy="122" r="18"/>
+                    <circle class="node-pulse-ring online" cx="709" cy="122" r="18" style="animation-delay: 0.9s;"/>
+                    <circle class="node-dash-ring online" cx="709" cy="122" r="14"/>
+                    <circle class="topo-node" cx="709" cy="122" r="6" fill="rgba(57,255,20,0.15)" stroke="var(--eva-green)" stroke-width="1.5" id="circleTK"/>
+                    <circle class="node-core-glow online" cx="709" cy="122" r="6" id="coreTK"/>
+                    <text x="709" y="145" text-anchor="middle" fill="var(--eva-green)" font-family="var(--mono)" font-size="7" font-weight="700">MAGI[TOKYO]</text>
+                </g>
+
+                <g id="nodeBL">
+                    <circle class="node-pulse-ring online" cx="429" cy="84" r="18"/>
+                    <circle class="node-pulse-ring online" cx="429" cy="84" r="18" style="animation-delay: 0.9s;"/>
+                    <circle class="node-dash-ring online" cx="429" cy="84" r="14"/>
+                    <circle class="topo-node" cx="429" cy="84" r="6" fill="rgba(57,255,20,0.15)" stroke="var(--eva-green)" stroke-width="1.5" id="circleBL"/>
+                    <circle class="node-core-glow online" cx="429" cy="84" r="6" id="coreBL"/>
+                    <text x="429" y="107" text-anchor="middle" fill="var(--eva-green)" font-family="var(--mono)" font-size="7" font-weight="700">MAGI[BERLIN]</text>
+                </g>
+
+                <g id="nodeMA">
+                    <circle class="node-pulse-ring online" cx="242" cy="107" r="18"/>
+                    <circle class="node-pulse-ring online" cx="242" cy="107" r="18" style="animation-delay: 0.9s;"/>
+                    <circle class="node-dash-ring online" cx="242" cy="107" r="14"/>
+                    <circle class="topo-node" cx="242" cy="107" r="6" fill="rgba(57,255,20,0.15)" stroke="var(--eva-green)" stroke-width="1.5" id="circleMA"/>
+                    <circle class="node-core-glow online" cx="242" cy="107" r="6" id="coreMA"/>
+                    <text x="242" y="130" text-anchor="middle" fill="var(--eva-green)" font-family="var(--mono)" font-size="6" font-weight="700">MAGI[MASSACHUSETTS]</text>
+                </g>
+            </svg>
+        </div>
+
+        <div class="pipeline-grid" id="pipelineGrid">
+            <div class="pipe-row" id="pipe1"><span class="pipe-status"></span><span class="pipe-name">CH-01</span><span class="pipe-route">CA←TK</span><span class="pipe-label">IDLE</span></div>
+            <div class="pipe-row" id="pipe2"><span class="pipe-status"></span><span class="pipe-name">CH-02</span><span class="pipe-route">CA←BL</span><span class="pipe-label">IDLE</span></div>
+            <div class="pipe-row" id="pipe3"><span class="pipe-status"></span><span class="pipe-name">CH-03</span><span class="pipe-route">CA←MA</span><span class="pipe-label">IDLE</span></div>
+            <div class="pipe-row" id="pipe4"><span class="pipe-status"></span><span class="pipe-name">CH-04</span><span class="pipe-route">TK↔BL</span><span class="pipe-label">IDLE</span></div>
+            <div class="pipe-row" id="pipe5"><span class="pipe-status"></span><span class="pipe-name">CH-05</span><span class="pipe-route">BL↔MA</span><span class="pipe-label">IDLE</span></div>
+            <div class="pipe-row" id="pipe6"><span class="pipe-status"></span><span class="pipe-name">CH-06</span><span class="pipe-route">TK↔MA</span><span class="pipe-label">IDLE</span></div>
+        </div>
+
+        <div class="status-lines" id="statusLines">
+            <div class="line-ok">✓ All MAGI systems operational</div>
+            <div class="line-ok">✓ MELCHIOR-1 perimeter scan — clear</div>
+            <div>▶ Monitoring external connections...</div>
+        </div>
+
+        <div class="magi-engines">
+            <div class="magi-eng defending" id="engM1">MELCHIOR-1 DEFENDING</div>
+            <div class="magi-eng defending" id="engB2">BALTHASAR-2 DEFENDING</div>
+            <div class="magi-eng defending" id="engC3">CASPER-3 DEFENDING</div>
+        </div>
+
+        <button class="btn-continue" id="btnContinue">ALL MAGI CAPTURED - CONTINUE</button>
+    </div>
+
+    <div class="vote-panel" id="votePanel" style="display:none">
+        <div class="vote-header">
+            <span>MAGI SELF-DESTRUCT VOTE</span>
+            <span class="vote-header-live"></span>
+        </div>
+        <div class="vote-body">
+            <div class="vote-proposal" id="voteProposal">PROPOSAL: SELF-DESTRUCT</div>
+            <div class="vote-row">
+                <span class="vote-eng-name">MELCHIOR-1</span>
+                <span class="vote-badge reject" id="voteM1">REJECT</span>
+            </div>
+            <div class="vote-row">
+                <span class="vote-eng-name">BALTHASAR-2</span>
+                <span class="vote-badge pending" id="voteB2">PENDING</span>
+            </div>
+            <div class="vote-row">
+                <span class="vote-eng-name">CASPER-3</span>
+                <span class="vote-badge approve" id="voteC3">APPROVE</span>
+            </div>
+            <div class="vote-result rejected" id="voteResult">VOTE REJECTED</div>
+            <div class="vote-log" id="voteLog"></div>
+        </div>
+    </div>
+
+    <div class="attack-log" id="attackLog"></div>
+
+    <script>
+        (function loadWorldMap() {
+            var mapGroup = document.getElementById('worldMap');
+            if (!mapGroup) return;
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', '/static/img/world-map.svg', true);
+            xhr.onload = function() {
+                if (xhr.status !== 200) return;
+                var parser = new DOMParser();
+                var svgDoc = parser.parseFromString(xhr.responseText, 'image/svg+xml');
+                var paths = svgDoc.querySelectorAll('path');
+                paths.forEach(function(p) {
+                    var d = p.getAttribute('d');
+                    if (!d) return;
+                    var np = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    np.setAttribute('d', d);
+                    mapGroup.appendChild(np);
+                });
+            };
+            xhr.send();
+        })();
+
+        const TOTAL = 62;
+        let remaining = TOTAL;
+        let attackStarted = false;
+        const returnTo = new URLSearchParams(window.location.search).get('from') || '/';
+
+        const engM1 = document.getElementById('engM1');
+        const engB2 = document.getElementById('engB2');
+        const engC3 = document.getElementById('engC3');
+
+        const stateColors = {
+            breached: { fill: 'rgba(255,45,45,0.15)', stroke: 'var(--eva-red)', text: 'var(--eva-red)', filter: 'url(#glowRed)' },
+            sealing: { fill: 'rgba(255,184,0,0.1)', stroke: 'var(--eva-amber)', text: 'var(--eva-amber)', filter: 'url(#glowAmber)' },
+            sealed: { fill: 'rgba(57,255,20,0.1)', stroke: 'var(--eva-green)', text: 'var(--eva-green)', filter: 'url(#glowGreen)' },
+            online: { fill: 'rgba(57,255,20,0.1)', stroke: 'var(--eva-green)', text: 'var(--eva-green)', filter: 'url(#glowGreen)' },
+            captured: { fill: 'rgba(57,255,20,0.1)', stroke: 'var(--eva-green)', text: 'var(--eva-green)', filter: 'url(#glowGreen)' }
+        };
+
+        function setPipe(id, state, label) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.className = 'pipe-row ' + state;
+            const lbl = el.querySelector('.pipe-label');
+            if (label) lbl.textContent = label;
+        }
+
+        function setLink(id, state) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.className.baseVal = 'topo-link ' + state;
+            el.setAttribute('filter', stateColors[state]?.filter || '');
+        }
+
+        function setNodeState(nodeGroupId, state) {
+            const g = document.getElementById(nodeGroupId);
+            if (!g) return;
+            const c = stateColors[state];
+            if (!c) return;
+            const node = g.querySelector('.topo-node');
+            if (node) { node.setAttribute('fill', c.fill); node.setAttribute('stroke', c.stroke); }
+            g.querySelectorAll('text').forEach(t => t.setAttribute('fill', c.text));
+            g.querySelectorAll('.node-pulse-ring').forEach(el => el.className.baseVal = 'node-pulse-ring ' + state);
+            g.querySelectorAll('.node-dash-ring').forEach(el => el.className.baseVal = 'node-dash-ring ' + state);
+            g.querySelectorAll('.node-core-glow').forEach(el => el.className.baseVal = 'node-core-glow ' + state);
+        }
+
+        function setLinkParticleState(linkId, state) {
+            const pathId = 'path' + linkId.replace('link', '');
+            const pathEl = document.getElementById(pathId);
+            if (!pathEl) return;
+            const particles = document.querySelectorAll('.data-particle');
+            const linkIndex = ['TKToCA','BLToCA','MAToCA','TKToBL','BLToMA','TKToMA'].indexOf(linkId.replace('link',''));
+            if (linkIndex < 0) return;
+            const startIdx = linkIndex * 2;
+            for (let i = startIdx; i < startIdx + 2 && i < particles.length; i++) {
+                particles[i].className.baseVal = 'data-particle ' + state;
+            }
+        }
+
+        function setSparksVisible(visible) {
+            const sg = document.getElementById('sparkGroup');
+            if (sg) sg.style.display = visible ? '' : 'none';
+        }
+
+        const statusMessages = [
+            { t: 1, html: '<div class="line-active">▶ DETECTING coordinated MAGI attack pattern...</div><div class="line-active">▶ MAGI[TOKYO], MAGI[BERLIN], MAGI[MASSACHUSETTS] exhibiting hostile behavior</div><div>▶ Initializing countermeasures...</div>' },
+            { t: 10, html: '<div class="line-ok">✓ Coordinated attack pattern confirmed</div><div class="line-ok">✓ MELCHIOR-1 defense perimeter holding</div><div class="line-active">▶ Blocking inbound attack channels...</div><div class="line-warn">▶ BALTHASAR-2 and CASPER-3 still hostile</div>' },
+            { t: 20, html: '<div class="line-ok">✓ Coordinated attack pattern confirmed</div><div class="line-ok">✓ MELCHIOR-1 defense perimeter stable</div><div class="line-active">▶ Sealing attack channels from hostile MAGI...</div><div class="line-warn">▶ Preparing counter-attack protocol...</div>' },
+            { t: 32, html: '<div class="line-ok">✓ Attack channels sealed</div><div class="line-ok">✓ MELCHIOR-1 defense perimeter stable</div><div class="line-active">▶ Counter-attacking BALTHASAR-2...</div><div class="line-warn">▶ CASPER-3 still hostile</div>' },
+            { t: 45, html: '<div class="line-ok">✓ Attack channels sealed</div><div class="line-ok">✓ MELCHIOR-1 defense perimeter stable</div><div class="line-ok">✓ BALTHASAR-2 captured — under MELCHIOR-1 control</div><div class="line-active">▶ Counter-attacking CASPER-3... 62%</div>' },
+            { t: 55, html: '<div class="line-ok">✓ Attack channels sealed</div><div class="line-ok">✓ MELCHIOR-1 defense perimeter stable</div><div class="line-ok">✓ BALTHASAR-2 captured</div><div class="line-warn">▶ Counter-attacking CASPER-3... 89%</div>' },
+            { t: 59, html: '<div class="line-ok">✓ Attack channels sealed</div><div class="line-ok">✓ MELCHIOR-1 defense perimeter stable</div><div class="line-ok">✓ BALTHASAR-2 captured</div><div class="line-active">▶ Counter-attacking CASPER-3... 97%</div>' },
+            { t: 61, html: '<div class="line-ok">✓ Attack channels sealed</div><div class="line-ok">✓ MELCHIOR-1 defense perimeter stable</div><div class="line-ok">✓ BALTHASAR-2 captured</div><div class="line-ok">✓ CASPER-3 captured</div><div class="line-ok">✓ ALL CLEAR — all hostile MAGI under MELCHIOR-1 control</div>' }
+        ];
+
+        const engineEvents = [
+            { t: 15, fn: () => {
+                setPipe('pipe1', 'sealing', 'BLOCKING'); setLink('linkTKToCA', 'sealing'); setLinkParticleState('linkTKToCA', 'sealing');
+                setPipe('pipe2', 'sealing', 'BLOCKING'); setLink('linkBLToCA', 'sealing'); setLinkParticleState('linkBLToCA', 'sealing');
+                setPipe('pipe3', 'sealing', 'BLOCKING'); setLink('linkMAToCA', 'sealing'); setLinkParticleState('linkMAToCA', 'sealing');
+            }},
+            { t: 25, fn: () => {
+                setPipe('pipe1', 'sealed', 'SEALED'); setLink('linkTKToCA', 'sealed'); setLinkParticleState('linkTKToCA', 'sealed');
+                setPipe('pipe2', 'sealed', 'SEALED'); setLink('linkBLToCA', 'sealed'); setLinkParticleState('linkBLToCA', 'sealed');
+                setPipe('pipe3', 'sealed', 'SEALED'); setLink('linkMAToCA', 'sealed'); setLinkParticleState('linkMAToCA', 'sealed');
+            }},
+            { t: 30, fn: () => {
+                engB2.className = 'magi-eng counter-attack';
+                engB2.textContent = 'BALTHASAR-2 COUNTER-ATTACK';
+                setPipe('pipe4', 'counter', 'CAPTURING'); setLink('linkTKToBL', 'counter'); setLinkParticleState('linkTKToBL', 'counter');
+                setNodeState('nodeTK', 'sealing');
+            }},
+            { t: 38, fn: () => {
+                setPipe('pipe4', 'counter', 'CAPTURED'); setLink('linkTKToBL', 'counter'); setLinkParticleState('linkTKToBL', 'counter');
+            }},
+            { t: 42, fn: () => {
+                engB2.className = 'magi-eng online';
+                engB2.textContent = 'BALTHASAR-2 CAPTURED';
+                setNodeState('nodeTK', 'captured');
+            }},
+            { t: 48, fn: () => {
+                engC3.className = 'magi-eng counter-attack';
+                engC3.textContent = 'CASPER-3 COUNTER-ATTACK';
+                setPipe('pipe5', 'counter', 'CAPTURING'); setLink('linkBLToMA', 'counter'); setLinkParticleState('linkBLToMA', 'counter');
+                setPipe('pipe6', 'counter', 'CAPTURING'); setLink('linkTKToMA', 'counter'); setLinkParticleState('linkTKToMA', 'counter');
+                setNodeState('nodeBL', 'sealing');
+            }},
+            { t: 54, fn: () => {
+                setPipe('pipe5', 'counter', 'CAPTURED'); setLink('linkBLToMA', 'counter'); setLinkParticleState('linkBLToMA', 'counter');
+                setPipe('pipe6', 'counter', 'CAPTURED'); setLink('linkTKToMA', 'counter'); setLinkParticleState('linkTKToMA', 'counter');
+            }},
+            { t: 57, fn: () => {
+                engC3.className = 'magi-eng online';
+                engC3.textContent = 'CASPER-3 CAPTURED';
+                setNodeState('nodeBL', 'captured');
+                setNodeState('nodeMA', 'sealing');
+                setSparksVisible(false);
+            }}
+        ];
+
+        const attackLogs = [
+            'ALERT: MAGI[TOKYO] — anomalous traffic spike detected',
+            'ALERT: MAGI[BERLIN] — unauthorized command sequence detected',
+            'ALERT: MAGI[MASSACHUSETTS] — firewall bypass attempt detected',
+            'BLOCKED: MAGI[TOKYO] → SYN flood on port 443',
+            'BLOCKED: MAGI[BERLIN] → UDP scan on port 8080',
+            'BLOCKED: MAGI[MASSACHUSETTS] → HTTP/2 rapid reset attack',
+            'BLOCKED: MAGI[TOKYO] → brute force on /api/login',
+            'BLOCKED: MAGI[BERLIN] → XSS injection on /api/upload',
+            'BLOCKED: MAGI[MASSACHUSETTS] → path traversal → ../../etc/',
+            'BLOCKED: MAGI[TOKYO] → SQL injection on /api/chat',
+            'BLOCKED: MAGI[BERLIN] → DDoS amplification query',
+            'BLOCKED: MAGI[MASSACHUSETTS] → malformed header overflow',
+            'BLOCKED: MAGI[TOKYO] → credential stuffing attempt',
+            'BLOCKED: MAGI[BERLIN] → SSRF attempt → 127.0.0.1',
+            'BLOCKED: MAGI[MASSACHUSETTS] → WebSocket hijack attempt',
+            'BLOCKED: MAGI[TOKYO] → CORS policy violation',
+            'BLOCKED: MAGI[BERLIN] → excessive refresh — FIREWALL TYPE-B engaged',
+            'BLOCKED: MAGI[MASSACHUSETTS] → buffer overflow on /api/verdict',
+            'BLOCKED: MAGI[TOKYO] → DNS tunneling attempt',
+            'BLOCKED: MAGI[BERLIN] → privilege escalation on /api/upload',
+            'BLOCKED: MAGI[MASSACHUSETTS] → session hijack on /api/chat'
+        ];
+
+        let logIdx = 0;
+        const logEl = document.getElementById('attackLog');
+        let logInterval;
+
+        const normalLogs = [
+            'MONITOR: MAGI[CANTON] heartbeat — OK, latency 2ms',
+            'MONITOR: MAGI[TOKYO] heartbeat — OK, latency 15ms',
+            'MONITOR: MAGI[BERLIN] heartbeat — OK, latency 28ms',
+            'MONITOR: MAGI[MASSACHUSETTS] heartbeat — OK, latency 42ms',
+            'MONITOR: All channels nominal — no anomalies',
+            'MONITOR: Firewall TYPE-B — active, threat level 0'
+        ];
+
+        function addNormalLog() {
+            const line = document.createElement('div');
+            const ts = new Date().toTimeString().split(' ')[0];
+            line.textContent = `[${ts}] ${normalLogs[logIdx % normalLogs.length]}`;
+            logIdx++;
+            logEl.appendChild(line);
+            if (logEl.children.length > 5) logEl.removeChild(logEl.firstChild);
+        }
+
+        function addAttackLog() {
+            const line = document.createElement('div');
+            const ts = new Date().toTimeString().split(' ')[0];
+            line.textContent = `[${ts}] ${attackLogs[logIdx % attackLogs.length]}`;
+            logIdx++;
+            logEl.appendChild(line);
+            if (logEl.children.length > 5) logEl.removeChild(logEl.firstChild);
+        }
+
+        addNormalLog();
+        logInterval = setInterval(function() {
+            if (attackStarted) {
+                clearInterval(logInterval);
+                addAttackLog();
+                logInterval = setInterval(addAttackLog, 1500 + Math.random() * 2000);
+            } else {
+                addNormalLog();
+            }
+        }, 2000);
+
+        const statusEl = document.getElementById('statusLines');
+        const btnEl = document.getElementById('btnContinue');
+
+        let triggeredStatuses = new Set();
+        let triggeredEngines = new Set();
+
+        function startAttack() {
+            attackStarted = true;
+
+            document.getElementById('votePanel').style.display = '';
+            document.getElementById('dataParticles').style.display = '';
+
+            setSparksVisible(true);
+
+            setNodeState('nodeTK', 'breached');
+            setNodeState('nodeBL', 'breached');
+            setNodeState('nodeMA', 'breached');
+
+            ['linkTKToCA','linkBLToCA','linkMAToCA','linkTKToBL','linkBLToMA','linkTKToMA'].forEach(id => {
+                setLink(id, 'breached');
+            });
+
+            setPipe('pipe1', 'breached', 'UNDER ATTACK');
+            setPipe('pipe2', 'breached', 'UNDER ATTACK');
+            setPipe('pipe3', 'breached', 'UNDER ATTACK');
+            setPipe('pipe4', 'breached', 'SYNCING');
+            setPipe('pipe5', 'breached', 'SYNCING');
+            setPipe('pipe6', 'breached', 'SYNCING');
+
+            engB2.className = 'magi-eng compromised';
+            engB2.textContent = 'BALTHASAR-2 ATTACKING';
+            engC3.className = 'magi-eng compromised';
+            engC3.textContent = 'CASPER-3 ATTACKING';
+
+            document.querySelectorAll('.data-particle').forEach(el => {
+                el.className.baseVal = 'data-particle breached';
+            });
+
+            tick();
+        }
+
+        setTimeout(startAttack, 3000);
+
+        function tick() {
+            if (remaining <= 0) return;
+            const elapsed = TOTAL - remaining;
+
+            for (const msg of statusMessages) {
+                if (elapsed >= msg.t && !triggeredStatuses.has(msg.t)) {
+                    triggeredStatuses.add(msg.t);
+                    statusEl.innerHTML = msg.html;
+                }
+            }
+
+            for (const evt of engineEvents) {
+                if (elapsed >= evt.t && !triggeredEngines.has(evt.t)) {
+                    triggeredEngines.add(evt.t);
+                    evt.fn();
+                }
+            }
+
+            remaining--;
+            if (remaining <= 0) {
+                document.body.classList.add('recovered');
+                document.querySelector('.firewall-container').classList.add('recovered-state');
+
+                document.getElementById('fwBadge').textContent = 'SYSTEM RECOVERED';
+                document.getElementById('fwTitle').textContent = 'ALL CLEAR';
+                document.getElementById('fwSubtitle').textContent = 'ALL HOSTILE MAGI SYSTEMS CAPTURED AND UNDER MELCHIOR-1 CONTROL';
+
+                engM1.className = 'magi-eng online';
+                engM1.textContent = 'MELCHIOR-1 ONLINE';
+                engB2.className = 'magi-eng online';
+                engB2.textContent = 'BALTHASAR-2 CAPTURED';
+                engC3.className = 'magi-eng online';
+                engC3.textContent = 'CASPER-3 CAPTURED';
+
+                setNodeState('nodeCA', 'online');
+                setNodeState('nodeTK', 'captured');
+                setNodeState('nodeBL', 'captured');
+                setNodeState('nodeMA', 'captured');
+                setSparksVisible(false);
+
+                document.querySelectorAll('.data-particle').forEach(el => {
+                    el.className.baseVal = 'data-particle sealed';
+                });
+
+                clearInterval(logInterval);
+                if (window.stopVoteSystem) window.stopVoteSystem();
+                const ts = new Date().toTimeString().split(' ')[0];
+                logEl.innerHTML = `<div>[${ts}] All hostile MAGI systems captured by MELCHIOR-1 — threat neutralized</div>`;
+
+                const monitorLogs = [
+                    'MONITOR: MAGI[CANTON] heartbeat — OK, latency 2ms',
+                    'MONITOR: MAGI[TOKYO] under MELCHIOR-1 control — stable',
+                    'MONITOR: MAGI[BERLIN] under MELCHIOR-1 control — stable',
+                    'MONITOR: MAGI[MASSACHUSETTS] under MELCHIOR-1 control — stable',
+                    'MONITOR: Channel CH-01 CA←TK — sealed, no anomalies',
+                    'MONITOR: Channel CH-02 CA←BL — sealed, no anomalies',
+                    'MONITOR: Channel CH-03 CA←MA — sealed, no anomalies',
+                    'MONITOR: Self-destruct protocol — DISABLED',
+                    'MONITOR: Firewall TYPE-B — active, threat level 0',
+                    'MONITOR: MELCHIOR-1 perimeter scan — clear',
+                    'MONITOR: BALTHASAR-2 integrity check — PASSED',
+                    'MONITOR: CASPER-3 integrity check — PASSED',
+                    'MONITOR: External MAGI sync — nominal',
+                    'MONITOR: N2 mine system — offline, safeties engaged',
+                    'MONITOR: Bakelite system — offline, safeties engaged',
+                    'MONITOR: Pilot link — stable, no anomalies',
+                    'MONITOR: Core temperature — nominal',
+                    'MONITOR: Data purge queue — empty'
+                ];
+                let monIdx = 0;
+                logInterval = setInterval(function() {
+                    const line = document.createElement('div');
+                    const mts = new Date().toTimeString().split(' ')[0];
+                    line.textContent = `[${mts}] ${monitorLogs[monIdx % monitorLogs.length]}`;
+                    logEl.appendChild(line);
+                    if (logEl.children.length > 5) logEl.removeChild(logEl.firstChild);
+                    monIdx++;
+                }, 2000 + Math.random() * 2000);
+
+                setTimeout(() => { btnEl.classList.add('visible'); }, 1500);
+            } else {
+                setTimeout(tick, 1000);
+            }
+        }
+
+        tick();
+
+        (function initVoteSystem() {
+            const voteM1 = document.getElementById('voteM1');
+            const voteB2 = document.getElementById('voteB2');
+            const voteC3 = document.getElementById('voteC3');
+            const voteResult = document.getElementById('voteResult');
+            const voteProposal = document.getElementById('voteProposal');
+            const voteLog = document.getElementById('voteLog');
+            if (!voteM1 || !voteB2 || !voteC3 || !voteResult) return;
+
+            const proposals = [
+                'PROPOSAL: SELF-DESTRUCT',
+                'PROPOSAL: N2 MINE DEPLOYMENT',
+                'PROPOSAL: EMERGENCY EJECTION',
+                'PROPOSAL: CORE SHUTDOWN',
+                'PROPOSAL: PURGE ALL DATA',
+                'PROPOSAL: LOCKDOWN SECTOR 7G',
+                'PROPOSAL: TERMINATE PILOT LINK',
+                'PROPOSAL: ACTIVATE BAKELITE'
+            ];
+
+            let voteRound = 0;
+            let voteActive = true;
+
+            function setBadge(el, state) {
+                el.className = 'vote-badge ' + state;
+                el.textContent = state === 'approve' ? 'APPROVE' : state === 'reject' ? 'REJECT' : 'PENDING';
+            }
+
+            function addVoteLog(text, cls) {
+                const div = document.createElement('div');
+                div.className = cls || '';
+                const ts = new Date().toTimeString().split(' ')[0];
+                div.textContent = `[${ts}] ${text}`;
+                voteLog.appendChild(div);
+                if (voteLog.children.length > 6) voteLog.removeChild(voteLog.firstChild);
+            }
+
+            function runVote() {
+                if (!voteActive) return;
+
+                const elapsed = TOTAL - remaining;
+
+                let m1Approve, b2Approve, c3Approve;
+
+                if (elapsed >= 52) {
+                    m1Approve = false;
+                    b2Approve = false;
+                    c3Approve = Math.random() < 0.15;
+                } else if (elapsed >= 40) {
+                    m1Approve = false;
+                    b2Approve = false;
+                    c3Approve = true;
+                } else {
+                    m1Approve = false;
+                    b2Approve = true;
+                    c3Approve = true;
+                }
+
+                const proposal = proposals[voteRound % proposals.length];
+                voteProposal.textContent = proposal;
+                voteRound++;
+
+                setBadge(voteM1, 'pending');
+                setBadge(voteB2, 'pending');
+                setBadge(voteC3, 'pending');
+
+                addVoteLog(`CASPER-3 proposes: ${proposal.replace('PROPOSAL: ', '')}`, 'log-propose');
+
+                const m1Delay = 800 + Math.random() * 600;
+                const c3Delay = 1000 + Math.random() * 800;
+                const b2Delay = 1400 + Math.random() * 1000;
+
+                setTimeout(function() {
+                    if (!voteActive) return;
+                    setBadge(voteM1, m1Approve ? 'approve' : 'reject');
+                    addVoteLog(`MELCHIOR-1 votes: ${m1Approve ? 'APPROVE' : 'REJECT'}`, m1Approve ? 'log-approve' : 'log-reject');
+                }, m1Delay);
+
+                setTimeout(function() {
+                    if (!voteActive) return;
+                    setBadge(voteC3, c3Approve ? 'approve' : 'reject');
+                    addVoteLog(`CASPER-3 votes: ${c3Approve ? 'APPROVE' : 'REJECT'}`, c3Approve ? 'log-approve' : 'log-reject');
+                }, c3Delay);
+
+                setTimeout(function() {
+                    if (!voteActive) return;
+                    setBadge(voteB2, b2Approve ? 'approve' : 'reject');
+                    addVoteLog(`BALTHASAR-2 votes: ${b2Approve ? 'APPROVE' : 'REJECT'}`, b2Approve ? 'log-approve' : 'log-reject');
+                }, b2Delay);
+
+                const resultDelay = Math.max(m1Delay, c3Delay, b2Delay) + 600;
+                setTimeout(function() {
+                    if (!voteActive) return;
+                    const approveCount = (m1Approve ? 1 : 0) + (b2Approve ? 1 : 0) + (c3Approve ? 1 : 0);
+                    if (approveCount >= 2) {
+                        voteResult.className = 'vote-result approved';
+                        voteResult.textContent = 'SELF-DESTRUCT APPROVED';
+                        addVoteLog('!! VOTE PASSED — SELF-DESTRUCT INITIATED !!', 'log-approve');
+                    } else {
+                        voteResult.className = 'vote-result rejected';
+                        voteResult.textContent = 'VOTE REJECTED';
+                        addVoteLog('VOTE FAILED — SELF-DESTRUCT CANCELLED', 'log-reject');
+                    }
+                }, resultDelay);
+            }
+
+            runVote();
+            const voteInterval = setInterval(function() {
+                if (!voteActive) { clearInterval(voteInterval); return; }
+                runVote();
+            }, 6000 + Math.random() * 3000);
+
+            window.stopVoteSystem = function() {
+                voteActive = false;
+                clearInterval(voteInterval);
+                setBadge(voteM1, 'reject');
+                setBadge(voteB2, 'reject');
+                setBadge(voteC3, 'reject');
+                voteResult.className = 'vote-result rejected';
+                voteResult.textContent = 'SELF-DESTRUCT CANCELLED';
+                voteProposal.textContent = 'PROPOSAL WITHDRAWN';
+                voteProposal.style.animation = 'none';
+                addVoteLog('ALL MAGI UNDER MELCHIOR-1 CONTROL', 'log-reject');
+                addVoteLog('SELF-DESTRUCT PROTOCOL TERMINATED', 'log-reject');
+            };
+        })();
+
+        btnEl.addEventListener('click', () => {
+            window.location.href = returnTo;
+        });
+    </script>
+</body>
+</html>

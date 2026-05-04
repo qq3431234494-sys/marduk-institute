@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MARDUK INSTITUTE - 适格者模拟面试辅助决策平台</title>
+    <link rel="stylesheet" href="/static/css/style.css?v=6">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="bg-canvas">
+        <div class="bg-orb orb-1"></div>
+        <div class="bg-orb orb-2"></div>
+        <div class="bg-orb orb-3"></div>
+        <div class="bg-grid"></div>
+        <div class="scan-line"></div>
+    </div>
+
+    <div class="auth-overlay" id="authOverlay">
+        <div class="auth-card">
+            <div class="auth-header">
+                <div class="nerv-logo">
+                    <img src="/static/img/wille.jpg" alt="WILLE" class="logo-img">
+                </div>
+                <div class="auth-title-group">
+                    <h1 class="auth-main-title">MARDUK INSTITUTE</h1>
+                    <p class="auth-subtitle">适格者模拟面试辅助决策平台</p>
+                </div>
+                <div class="auth-status-line">
+                    <span class="blink-dot"></span>
+                    <span class="auth-status-label">MAGI ONLINE</span>
+                    <div class="easter-egg auth-easter">
+                        <span class="easter-line">MAGI [CN]</span>
+                        <span class="easter-line easter-powered">POWERED BY DEEPSEEK</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="auth-tabs">
+                <button class="auth-tab active" data-auth="login">LOGIN</button>
+                <button class="auth-tab" data-auth="register">REGISTER</button>
+                <button class="auth-tab" data-auth="forgot">RECOVERY</button>
+            </div>
+
+            <form class="auth-form" id="loginForm">
+                <div class="form-group">
+                    <label>OPERATOR ID</label>
+                    <input type="text" id="loginUsername" placeholder="输入操作员ID" autocomplete="username" required>
+                </div>
+                <div class="form-group">
+        <label>ACCESS CODE</label>
+        <input type="password" id="loginPassword" placeholder="输入访问密码" autocomplete="current-password" required>
+    </div>
+    <div class="form-group">
+        <label>CAPTCHA</label>
+        <div class="captcha-row">
+            <input type="text" id="loginCaptcha" placeholder="验证码" maxlength="4" autocomplete="off" required>
+            <img id="captchaImg" class="captcha-img" alt="CAPTCHA" title="点击刷新">
+        </div>
+    </div>
+                <div class="auth-error" id="loginError"></div>
+                <button type="submit" class="btn-nerv" id="loginBtn">AUTHENTICATE</button>
+            </form>
+
+            <form class="auth-form" id="registerForm" style="display:none">
+                <div class="form-group">
+                    <label>OPERATOR ID</label>
+                    <input type="text" id="regUsername" placeholder="3-20个字符" autocomplete="username" required>
+                </div>
+                <div class="form-group">
+                    <label>ACCESS CODE</label>
+                    <input type="password" id="regPassword" placeholder="至少6位" autocomplete="new-password" required>
+                </div>
+                <div class="form-group">
+                    <label>CONFIRM CODE</label>
+                    <input type="password" id="regPasswordConfirm" placeholder="再次输入密码" autocomplete="new-password" required>
+                </div>
+                <div class="auth-error" id="registerError"></div>
+                <button type="submit" class="btn-nerv" id="registerBtn">REGISTER</button>
+            </form>
+
+            <form class="auth-form" id="forgotForm" style="display:none">
+                <div class="form-group">
+                    <label>OPERATOR ID</label>
+                    <input type="text" id="forgotUsername" placeholder="请输入用户名" autocomplete="username" required>
+                </div>
+                <div class="form-group">
+                    <label>RECOVERY KEY</label>
+                    <input type="text" id="forgotRecoveryKey" placeholder="注册时获得的6位验证码" maxlength="6" required>
+                </div>
+                <div class="form-group">
+                    <label>NEW ACCESS CODE</label>
+                    <input type="password" id="forgotNewPassword" placeholder="至少6位" autocomplete="new-password" required>
+                </div>
+                <div class="auth-error" id="forgotError"></div>
+                <div class="auth-success" id="forgotSuccess"></div>
+                <button type="submit" class="btn-nerv" id="forgotBtn">RESET CODE</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="recoveryKeyModal" style="display:none">
+        <div class="modal-card">
+            <div class="modal-icon">
+                <img src="/static/img/wille.jpg" alt="WILLE" class="logo-img-lg">
+            </div>
+            <h2>REGISTRATION COMPLETE</h2>
+            <p class="modal-desc">请务必保存以下找回密码验证码，丢失将无法找回密码：</p>
+            <div class="recovery-key-box" id="recoveryKeyDisplay">------</div>
+            <p class="modal-warning">此验证码仅显示一次，请立即记录到安全的地方</p>
+            <button class="btn-nerv" id="recoveryKeyCopyBtn">COPY KEY</button>
+            <button class="btn-secondary" id="recoveryKeyConfirmBtn">CONFIRM & CONTINUE</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="disclaimerModal" style="display:none">
+        <div class="modal-card disclaimer-card">
+            <div class="modal-icon">
+                <img src="/static/img/wille.jpg" alt="WILLE" class="logo-img-lg">
+            </div>
+            <h2>DISCLAIMER / 免责声明</h2>
+            <div class="disclaimer-content">
+                <p>本平台所有分析结果、面试提问及评估建议均由人工智能模型自动生成，仅供参考。</p>
+                <p>AI 生成的内容可能存在偏差或错误，不构成任何专业人力资源决策的最终依据。</p>
+                <p>请结合实际情况独立判断，本平台不对因使用 AI 生成内容所做出的决策承担任何责任。</p>
+            </div>
+            <button class="btn-nerv" id="disclaimerConfirmBtn">I UNDERSTAND / 我已知晓</button>
+        </div>
+    </div>
+
+    <div class="app" id="appMain" style="display:none">
+        <header class="header">
+            <div class="header-left">
+                <div class="nerv-logo-sm">
+                    <img src="/static/img/wille.jpg" alt="WILLE" class="logo-img-sm">
+                </div>
+                <div class="header-title-group">
+                    <h1 class="header-title">MARDUK INSTITUTE</h1>
+                    <p class="header-subtitle">AI-RESUME ANALYSIS & SIMULATION SYSTEM</p>
+                </div>
+            </div>
+            <div class="header-center">
+                <div class="hud-indicator">
+                    <span class="hud-label">SYNC RATE</span>
+                    <div class="hud-bar"><div class="hud-bar-fill" id="syncBar"></div></div>
+                    <span class="hud-value" id="syncValue">0%</span>
+                </div>
+            </div>
+            <div class="header-right">
+                <a href="/hr" class="btn-nav-link" title="HR BATCH SCREENING" style="display:flex;align-items:center;gap:4px;color:var(--text-muted);font-size:10px;font-family:var(--mono);letter-spacing:1px;text-decoration:none;padding:4px 10px;border:1px solid var(--border-dim);transition:all 0.3s;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    HR SCREEN
+                </a>
+                <div class="system-status" id="systemStatus">
+                    <span class="blink-dot"></span>
+                    <span class="status-label">MAGI ONLINE</span>
+                    <div class="easter-egg" id="easterEgg">
+                        <span class="easter-line">MAGI SYSTEM [CN]</span>
+                        <span class="easter-line easter-powered">POWERED BY DEEPSEEK</span>
+                    </div>
+                </div>
+                <div class="user-menu">
+                    <span class="operator-id" id="headerUsername">--</span>
+                    <a href="/" class="btn-icon" title="HOME" style="display:inline-flex;align-items:center;justify-content:center;color:var(--text-muted);text-decoration:none;padding:6px;border:1px solid var(--border-dim);transition:all 0.3s;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                            <polyline points="9 22 9 12 15 12 15 22"/>
+                        </svg>
+                    </a>
+                    <button class="btn-icon" id="btnLogout" title="LOGOUT">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                            <polyline points="16 17 21 12 16 7"/>
+                            <line x1="21" y1="12" x2="9" y2="12"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <main class="main">
+            <section class="panel panel-left">
+                <div class="panel-label">CANDIDATE DATA</div>
+
+                <div class="upload-section" id="uploadSection">
+                    <div class="upload-area" id="uploadArea">
+                        <div class="upload-hex">
+                            <svg width="64" height="64" viewBox="0 0 64 64">
+                                <polygon points="32,4 58,18 58,46 32,60 6,46 6,18" fill="none" stroke="var(--nerv-orange)" stroke-width="1.5" opacity="0.6"/>
+                                <polygon points="32,12 50,22 50,42 32,52 14,42 14,22" fill="none" stroke="var(--nerv-orange)" stroke-width="1" opacity="0.3"/>
+                                <line x1="32" y1="20" x2="32" y2="38" stroke="var(--nerv-orange)" stroke-width="2"/>
+                                <polyline points="26,30 32,20 38,30" stroke="var(--nerv-orange)" stroke-width="2" fill="none"/>
+                            </svg>
+                        </div>
+                        <p class="upload-title">UPLOAD CANDIDATE FILE</p>
+                        <p class="upload-subtitle">拖拽或点击上传简历</p>
+                        <p class="upload-hint">TXT / PDF / DOCX</p>
+                        <input type="file" id="fileInput" accept=".txt,.pdf,.docx" hidden>
+                    </div>
+                    <div class="upload-progress" id="uploadProgress" style="display:none">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                        <p class="progress-text" id="progressText">ANALYZING...</p>
+                    </div>
+
+                    <div class="target-form" id="targetForm" style="display:none">
+                        <div class="target-label">TARGET POSITION / 目标岗位</div>
+                        <div class="target-fields">
+                            <div class="target-field">
+                                <label>应聘岗位 <span class="label-en">Position</span></label>
+                                <input type="text" id="targetPosition" placeholder="如：前端开发工程师">
+                            </div>
+                            <div class="target-field">
+                                <label>工作城市 <span class="label-en">City</span></label>
+                                <input type="text" id="targetCity" placeholder="如：上海">
+                            </div>
+                            <div class="target-field">
+                                <label>目标薪资 <span class="label-en">Salary</span></label>
+                                <input type="text" id="targetSalary" placeholder="如：15K-20K">
+                            </div>
+                        </div>
+                        <button class="btn-nerv btn-analyze" id="btnAnalyze">ANALYZE</button>
+                        <button class="btn-secondary btn-reupload" id="btnReupload">RE-UPLOAD / 重新上传</button>
+                    </div>
+
+                    <div class="magi-network" id="magiNetwork">
+                        <div class="magi-net-header">
+                            <span class="magi-net-title">MAGI NETWORK STATUS</span>
+                            <span class="magi-net-badge">LIVE</span>
+                        </div>
+                        <div class="magi-net-nodes">
+                            <div class="magi-node">
+                                <span class="node-dot online" id="dotT01"></span>
+                                <span class="node-name">MAGI-T01</span>
+                                <span class="node-loc">TOKYO-01</span>
+                                <span class="node-ping" id="pingT01">--ms</span>
+                            </div>
+                            <div class="magi-node">
+                                <span class="node-dot online" id="dotB02"></span>
+                                <span class="node-name">MAGI-B02</span>
+                                <span class="node-loc">BERLIN-02</span>
+                                <span class="node-ping" id="pingB02">--ms</span>
+                            </div>
+                            <div class="magi-node">
+                                <span class="node-dot online" id="dotM03"></span>
+                                <span class="node-name">MAGI-M03</span>
+                                <span class="node-loc">MASS-03</span>
+                                <span class="node-ping" id="pingM03">--ms</span>
+                            </div>
+                            <div class="magi-node">
+                                <span class="node-dot" id="dotN04"></span>
+                                <span class="node-name">MAGI-N04</span>
+                                <span class="node-loc">NEVADA-04</span>
+                                <span class="node-ping" id="pingN04">--ms</span>
+                            </div>
+                            <div class="magi-node">
+                                <span class="node-dot online" id="dotH05"></span>
+                                <span class="node-name">MAGI-H05</span>
+                                <span class="node-loc">HOKKAIDO-05</span>
+                                <span class="node-ping" id="pingH05">--ms</span>
+                            </div>
+                        </div>
+                        <div class="magi-net-log" id="magiNetLog"></div>
+                    </div>
+                </div>
+
+                <div class="analysis-section" id="analysisSection" style="display:none">
+                    <div class="section-header">
+                        <h2>ANALYSIS RESULT</h2>
+                        <button class="btn-icon" id="btnNewUpload" title="NEW UPLOAD">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="23 4 23 10 17 10"/>
+                                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div class="candidate-card" id="candidateCard">
+                        <div class="candidate-avatar" id="candidateAvatar">?</div>
+                        <div class="candidate-info">
+                            <h3 id="candidateName">UNKNOWN</h3>
+                            <p id="candidateTitle">CLASSIFICATION PENDING</p>
+                        </div>
+                        <div class="match-score">
+                            <div class="score-ring" id="scoreRing">
+                                <span id="scoreValue">--</span>
+                            </div>
+                            <span class="score-label">COMPAT.</span>
+                        </div>
+                    </div>
+
+                    <div class="analysis-tabs">
+                        <button class="tab active" data-tab="summary">OVERVIEW</button>
+                        <button class="tab" data-tab="fit">FIT</button>
+                        <button class="tab" data-tab="strengths">STRENGTH</button>
+                        <button class="tab" data-tab="weaknesses">DEFICIT</button>
+                        <button class="tab" data-tab="suggestions">ADVISE</button>
+                    </div>
+
+                    <div class="tab-content" id="tabContent">
+                        <div class="tab-pane active" id="tab-summary">
+                            <div class="summary-block" id="summaryContent"></div>
+                        </div>
+                        <div class="tab-pane" id="tab-fit">
+                            <div class="fit-section" id="fitContent">
+                                <div class="fit-scores">
+                                    <div class="fit-score-card">
+                                        <div class="fit-score-ring" id="positionFitRing">
+                                            <span id="positionFitValue">--</span>
+                                        </div>
+                                        <span class="fit-score-label">POSITION FIT</span>
+                                        <span class="fit-score-sublabel">岗位匹配度</span>
+                                    </div>
+                                    <div class="fit-score-card">
+                                        <div class="fit-score-ring" id="salaryFitRing">
+                                            <span id="salaryFitValue">--</span>
+                                        </div>
+                                        <span class="fit-score-label">SALARY FIT</span>
+                                        <span class="fit-score-sublabel">薪资匹配度</span>
+                                    </div>
+                                </div>
+                                <div class="fit-detail">
+                                    <div class="fit-detail-block">
+                                        <div class="fit-detail-title">POSITION ANALYSIS</div>
+                                        <p class="fit-detail-text" id="positionReason">--</p>
+                                    </div>
+                                    <div class="fit-detail-block">
+                                        <div class="fit-detail-title">SALARY ANALYSIS</div>
+                                        <p class="fit-detail-text" id="salaryReason">--</p>
+                                    </div>
+                                    <div class="fit-detail-block">
+                                        <div class="fit-detail-title">SKILL GAPS</div>
+                                        <ul class="tag-list gap" id="skillGapsList"></ul>
+                                    </div>
+                                    <div class="fit-detail-block">
+                                        <div class="fit-detail-title">CAREER ADVICE</div>
+                                        <p class="fit-detail-text" id="careerAdvice">--</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tab-pane" id="tab-strengths">
+                            <ul class="tag-list" id="strengthsList"></ul>
+                        </div>
+                        <div class="tab-pane" id="tab-weaknesses">
+                            <ul class="tag-list warning" id="weaknessesList"></ul>
+                        </div>
+                        <div class="tab-pane" id="tab-suggestions">
+                            <ul class="suggestion-list" id="suggestionsList"></ul>
+                        </div>
+                    </div>
+
+                    <div class="interview-launch" id="interviewLaunch">
+                        <div class="style-label">INTERVIEW MODE</div>
+                        <div class="style-options">
+                            <button class="style-btn" data-style="gentle">
+                                <span class="style-icon">&#9829;</span>
+                                <span class="style-name">GENTLE</span>
+                                <span class="style-desc">温和鼓励</span>
+                            </button>
+                            <button class="style-btn active" data-style="normal">
+                                <span class="style-icon">&#9733;</span>
+                                <span class="style-name">NORMAL</span>
+                                <span class="style-desc">标准专业</span>
+                            </button>
+                            <button class="style-btn" data-style="tough">
+                                <span class="style-icon">&#9888;</span>
+                                <span class="style-name">TOUGH</span>
+                                <span class="style-desc">压力刁难</span>
+                            </button>
+                        </div>
+                        <button class="btn-start-interview" id="btnStartInterview">START SIMULATION</button>
+                    </div>
+                </div>
+            </section>
+
+            <section class="panel panel-right">
+                <div class="panel-label">SIMULATION INTERFACE</div>
+                <div class="chat-header">
+                    <div class="chat-header-info">
+                        <div class="chat-avatar">
+                            <img src="/static/img/MAGI.JPG" alt="MAGI" class="avatar-img">
+                        </div>
+                        <div>
+                            <h3 id="interviewerName">MAGI AI <span class="deliberating-badge" id="deliberatingBadge" style="display:none">审议中</span></h3>
+                            <p class="chat-status" id="chatStatus">AWAITING CANDIDATE DATA...</p>
+                        </div>
+                    </div>
+                    <button class="btn-icon" id="btnClearChat" title="CLEAR LOG">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3 6 5 6 21 6"/>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="chat-messages" id="chatMessages">
+                    <div class="message system">
+                        <div class="message-bubble">
+                            MARDUK SYSTEM INITIALIZED. 上传候选人简历文件以启动适格性评估与模拟面试程序。
+                        </div>
+                    </div>
+                </div>
+
+                <div class="magi-verdict" id="magiVerdict" style="display:none">
+                    <div class="verdict-header">
+                        <span class="verdict-title">MAGI DELIBERATION SYSTEM</span>
+                        <span class="verdict-subtitle">三引擎审议表决</span>
+                    </div>
+                    <div class="verdict-engines">
+                        <div class="verdict-engine" id="verdictMelchior">
+                            <div class="engine-name">MELCHIOR-1</div>
+                            <div class="engine-result" id="melchiorResult">--</div>
+                            <div class="engine-reason" id="melchiorReason"></div>
+                        </div>
+                        <div class="verdict-engine" id="verdictBalthasar">
+                            <div class="engine-name">BALTHASAR-2</div>
+                            <div class="engine-result" id="balthasarResult">--</div>
+                            <div class="engine-reason" id="balthasarReason"></div>
+                        </div>
+                        <div class="verdict-engine" id="verdictCasper">
+                            <div class="engine-name">CASPER-3</div>
+                            <div class="engine-result" id="casperResult">--</div>
+                            <div class="engine-reason" id="casperReason"></div>
+                        </div>
+                    </div>
+                    <div class="verdict-final" id="verdictFinal">
+                        <div class="verdict-final-label">FINAL VERDICT</div>
+                        <div class="verdict-final-result" id="verdictFinalResult">--</div>
+                    </div>
+                    <button class="btn-nerv btn-reinterview" id="btnReinterview">RE-INTERVIEW / 重新面试</button>
+                </div>
+
+                <div class="chat-input-area">
+                    <div class="input-wrapper">
+                        <span class="input-prefix">&gt;</span>
+                        <textarea id="chatInput" placeholder="输入回答..." rows="1" disabled></textarea>
+                        <button class="btn-send" id="btnSend" disabled>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="22" y1="2" x2="11" y2="13"/>
+                                <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <span>MARDUK INSTITUTE</span>
+            <span class="footer-sep">|</span>
+            <span>CLASSIFIED</span>
+            <span class="footer-sep">|</span>
+            <span id="footerTime">--:--:--</span>
+        </footer>
+
+        <nav class="mobile-nav" id="mobileNav">
+            <button class="mobile-nav-btn active" data-view="data">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                </svg>
+                <span>DATA</span>
+            </button>
+            <button class="mobile-nav-btn" data-view="chat">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+                <span>SIM</span>
+            </button>
+        </nav>
+    </div>
+
+    <script src="/static/js/app.js?v=6"></script>
+</body>
+</html>

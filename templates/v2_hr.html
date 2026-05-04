@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MARDUK INSTITUTE — HR Portal v2.0</title>
+<link rel="stylesheet" href="/static/css/style.css?v=6">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+    body { font-family: var(--sans); background: var(--bg-deep); color: var(--text-primary); margin: 0; overflow: hidden; height: 100vh; }
+
+    .bg-canvas { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+    .bg-orb { position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.35; animation: orbDrift 30s ease-in-out infinite; }
+    .orb-hr1 { width: 600px; height: 600px; background: radial-gradient(circle, rgba(255,107,43,0.3), transparent 70%); top: -15%; left: -8%; animation-duration: 35s; }
+    .orb-hr2 { width: 450px; height: 450px; background: radial-gradient(circle, rgba(255,184,0,0.2), transparent 70%); bottom: -10%; right: -5%; animation-duration: 28s; animation-delay: -8s; }
+    .bg-grid { position: absolute; inset: 0; background-image: linear-gradient(rgba(255,107,43,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,107,43,0.025) 1px, transparent 1px); background-size: 48px 48px; }
+    .scan-line { position: absolute; inset: 0; background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 4px); pointer-events: none; z-index: 1; }
+    @keyframes orbDrift { 0%,100%{transform:translate(0,0) scale(1)} 33%{transform:translate(60px,-40px) scale(1.06)} 66%{transform:translate(-30px,50px) scale(0.95)} }
+
+    .app { display: flex; flex-direction: column; height: 100vh; position: relative; z-index: 2; }
+
+    .header { display: flex; align-items: center; padding: 0 28px; height: 64px; background: var(--bg-panel); border-bottom: 1px solid var(--border-dim); flex-shrink: 0; }
+    .header-left { display: flex; align-items: center; gap: 16px; }
+    .header-title { font-family: var(--mono); font-size: 17px; font-weight: 700; color: var(--nerv-orange); letter-spacing: 2px; }
+    .header-subtitle { font-family: var(--mono); font-size: 11px; font-weight: 500; color: var(--text-muted); letter-spacing: 1.5px; margin-top: 2px; }
+    .header-center { position: absolute; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; }
+    .header-center .blink-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--nerv-orange); animation: blinkDot 2s infinite; }
+    .header-center .status-label { font-family: var(--mono); font-size: 11px; font-weight: 600; color: var(--nerv-orange); letter-spacing: 1px; }
+    @keyframes blinkDot { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    .header-right { display: flex; align-items: center; gap: 14px; margin-left: auto; }
+    .header-right a { color: var(--text-muted); font-size: 12px; font-family: var(--mono); letter-spacing: 1px; text-decoration: none; padding: 6px 14px; border: 1px solid var(--border-dim); transition: all 0.3s; }
+    .header-right a:hover { color: var(--nerv-orange); border-color: var(--nerv-orange); }
+    .operator-id { font-family: var(--mono); font-size: 13px; color: var(--text-secondary); }
+
+    .main { display: flex; flex: 1; overflow: hidden; }
+
+    .panel-left { width: 420px; min-width: 380px; background: var(--bg-panel); border-right: 1px solid var(--border-dim); display: flex; flex-direction: column; overflow: hidden; }
+    .panel-right { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+    .panel-label { font-family: var(--mono); font-size: 11px; font-weight: 600; color: var(--nerv-orange); letter-spacing: 2px; padding: 10px 24px; background: var(--nerv-orange-dim); border-bottom: 1px solid var(--border-dim); flex-shrink: 0; }
+
+    .panel-scroll { flex: 1; overflow-y: auto; padding: 24px; }
+    .panel-scroll::-webkit-scrollbar { width: 4px; }
+    .panel-scroll::-webkit-scrollbar-track { background: transparent; }
+    .panel-scroll::-webkit-scrollbar-thumb { background: var(--border-dim); }
+
+    .nav-item { display: flex; align-items: center; gap: 12px; padding: 14px 20px; cursor: pointer; transition: all 0.3s; border-left: 4px solid transparent; color: var(--text-muted); font-family: var(--mono); font-size: 13px; font-weight: 600; letter-spacing: 1px; }
+    .nav-item:hover { color: var(--text-primary); background: rgba(255,107,43,0.04); }
+    .nav-item.active { color: var(--nerv-orange); border-left-color: var(--nerv-orange); background: rgba(255,107,43,0.06); }
+    .nav-item .icon { font-size: 18px; width: 22px; text-align: center; }
+    .nav-item .zh { font-size: 11px; font-weight: 400; opacity: 0.5; margin-left: 6px; }
+
+    .sec-title { font-family: var(--mono); font-size: 13px; font-weight: 700; letter-spacing: 2px; color: var(--eva-amber); margin-bottom: 18px; padding-bottom: 10px; border-bottom: 1px solid rgba(255,184,0,0.12); }
+    .sec-title .zh { color: var(--text-muted); font-size: 11px; font-weight: 400; margin-left: 8px; }
+
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-family: var(--mono); font-size: 11px; font-weight: 600; color: var(--text-muted); letter-spacing: 1px; margin-bottom: 6px; }
+    .form-group label .zh { font-size: 10px; color: rgba(255,255,255,0.2); margin-left: 4px; }
+    .form-group input, .form-group textarea { width: 100%; box-sizing: border-box; padding: 10px 14px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-dim); color: var(--text-primary); font-family: var(--mono); font-size: 14px; outline: none; transition: all 0.3s; }
+    .form-group input:focus, .form-group textarea:focus { border-color: var(--nerv-orange); box-shadow: 0 0 10px var(--nerv-orange-dim); }
+    .form-group textarea { height: 90px; resize: vertical; }
+    .form-row { display: flex; gap: 14px; }
+    .form-row .form-group { flex: 1; }
+
+    .toggle-row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+    .toggle-row label { font-family: var(--mono); font-size: 10px; color: var(--text-muted); letter-spacing: 0.5px; }
+    .toggle-switch { position: relative; width: 36px; height: 18px; cursor: pointer; }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-switch .slider { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: var(--border-dim); transition: 0.3s; }
+    .toggle-switch .slider::before { content: ""; position: absolute; height: 12px; width: 12px; left: 3px; bottom: 3px; background: var(--text-muted); transition: 0.3s; }
+    .toggle-switch input:checked + .slider { background: var(--nerv-orange); box-shadow: 0 0 6px var(--nerv-orange-dim); }
+    .toggle-switch input:checked + .slider::before { transform: translateX(18px); background: var(--bg-deep); }
+
+    .btn-nerv { padding: 10px 24px; font-family: var(--mono); font-size: 12px; font-weight: 700; letter-spacing: 1.5px; cursor: pointer; transition: all 0.3s; border: none; background: var(--nerv-orange); color: var(--bg-deep); }
+    .btn-nerv:hover { box-shadow: 0 0 16px var(--nerv-orange-glow); }
+    .btn-nerv:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-outline { background: transparent; border: 1px solid; padding: 7px 14px; font-size: 11px; font-family: var(--mono); font-weight: 700; letter-spacing: 1px; cursor: pointer; transition: all 0.3s; }
+    .btn-outline.green { color: var(--eva-green); border-color: var(--eva-green); }
+    .btn-outline.green:hover { background: var(--eva-green-dim); }
+    .btn-outline.amber { color: var(--eva-amber); border-color: var(--eva-amber); }
+    .btn-outline.amber:hover { background: var(--eva-amber-dim); }
+    .btn-outline.red { color: var(--eva-red); border-color: var(--eva-red); }
+    .btn-outline.red:hover { background: var(--eva-red-dim); }
+    .btn-outline.blue { color: #60a5fa; border-color: #60a5fa; }
+    .btn-outline.blue:hover { background: rgba(96,165,250,0.1); }
+
+    .job-item { background: var(--bg-glass); border: 1px solid var(--border-dim); padding: 14px 18px; margin-bottom: 6px; transition: all 0.3s; cursor: pointer; }
+    .job-item:hover { border-color: var(--nerv-orange); }
+    .job-item.active { border-color: var(--nerv-orange); background: rgba(255,107,43,0.05); }
+    .job-item-title { font-family: var(--mono); font-size: 13px; font-weight: 700; letter-spacing: 0.5px; }
+    .job-item-meta { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+
+    .job-detail { display: none; }
+    .job-detail.active { display: block; animation: fadeIn 0.25s ease; }
+    .job-detail-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid rgba(255,107,43,0.12); }
+    .job-detail-title { font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--nerv-orange); letter-spacing: 1px; }
+    .job-detail-meta { font-family: var(--mono); font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+    .job-detail-actions { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
+    .job-toggle { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; padding: 8px 16px; background: rgba(0,0,0,0.2); border: 1px solid var(--border-dim); border-radius: 4px; transition: all 0.3s; }
+    .job-toggle:hover { border-color: var(--nerv-orange); }
+    .job-toggle .dot { width: 10px; height: 10px; border-radius: 50%; transition: all 0.3s; }
+    .job-toggle .dot.on { background: var(--eva-green); box-shadow: 0 0 8px var(--eva-green-dim); }
+    .job-toggle .dot.off { background: var(--eva-red); box-shadow: 0 0 8px var(--eva-red-dim); }
+    .job-toggle label { font-family: var(--mono); font-size: 11px; letter-spacing: 1px; color: var(--text-muted); cursor: pointer; white-space: nowrap; }
+    .job-vi-switch { display: flex; align-items: center; gap: 8px; padding: 8px 16px; background: rgba(0,0,0,0.2); border: 1px solid var(--border-dim); border-radius: 4px; }
+    .job-vi-switch label { font-family: var(--mono); font-size: 11px; letter-spacing: 0.5px; color: var(--text-muted); cursor: pointer; white-space: nowrap; }
+    .mini-toggle { position: relative; width: 32px; height: 17px; cursor: pointer; }
+    .mini-toggle input { opacity: 0; width: 0; height: 0; }
+    .mini-toggle .slider { position: absolute; inset: 0; background: var(--border-dim); border-radius: 8.5px; transition: 0.25s; }
+    .mini-toggle .slider::before { content:""; position:absolute; height:13px;width:13px;left:2px;top:2px;background:var(--text-muted);border-radius:50%;transition:0.25s }
+    .mini-toggle input:checked + .slider { background: var(--nerv-orange); }
+    .mini-toggle input:checked + .slider::before { transform:translateX(15px);background:var(--bg-deep) }
+
+    .app-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .app-table th { text-align: left; padding: 10px 12px; font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 1.5px; color: var(--text-muted); border-bottom: 1px solid var(--border-dim); background: var(--bg-panel); }
+    .app-table th .th-zh { display: block; font-size: 9px; color: rgba(255,255,255,0.2); margin-top: 2px; }
+    .app-table td { padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.02); vertical-align: middle; }
+    .app-table tr:hover td { background: rgba(255,107,43,0.03); }
+
+    .score { display: inline-block; padding: 3px 10px; font-weight: 700; font-size: 14px; border: 1px solid; font-family: var(--mono); }
+    .score.high { color: var(--eva-green); border-color: var(--eva-green); background: var(--eva-green-dim); }
+    .score.mid { color: var(--eva-amber); border-color: var(--eva-amber); background: var(--eva-amber-dim); }
+    .score.low { color: var(--eva-red); border-color: var(--eva-red); background: var(--eva-red-dim); }
+
+    .app-status { font-family: var(--mono); font-size: 10px; padding: 3px 8px; border: 1px solid; letter-spacing: 0.5px; font-weight: 700; white-space: nowrap; }
+    .app-status.pending { color: var(--text-muted); border-color: var(--border-dim); }
+    .app-status.screened_pass { color: var(--eva-green); border-color: var(--eva-green); }
+    .app-status.screened_reject { color: var(--eva-red); border-color: var(--eva-red); }
+    .app-status.screened { color: var(--eva-amber); border-color: var(--eva-amber); }
+    .app-status.accepted { color: var(--eva-green); border-color: var(--eva-green); background: var(--eva-green-dim); }
+    .app-status.interview_invited { color: #60a5fa; border-color: #60a5fa; background: rgba(96,165,250,0.1); }
+
+    .empty { text-align: center; padding: 50px 20px; color: var(--text-muted); }
+    .empty .icon { font-size: 36px; margin-bottom: 12px; opacity: 0.2; }
+    .empty p { font-family: var(--mono); font-size: 13px; letter-spacing: 1px; }
+    .empty .zh { font-size: 11px; opacity: 0.5; margin-top: 4px; }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; animation: fadeIn 0.25s ease; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
+
+    .resume-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 100; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
+    .resume-modal.active { display: flex; }
+    .resume-modal-content { background: var(--bg-panel); border: 1px solid var(--nerv-orange); padding: 24px; width: 90%; max-width: 720px; max-height: 85vh; display: flex; flex-direction: column; }
+    .resume-modal-content h3 { font-family: var(--mono); font-size: 14px; color: var(--nerv-orange); letter-spacing: 2px; margin: 0 0 14px; }
+    .resume-tabs { display: flex; gap: 0; margin-bottom: 14px; border-bottom: 1px solid var(--border-dim); }
+    .resume-tab { padding: 8px 18px; font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 1px; color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.3s; }
+    .resume-tab:hover { color: var(--text-primary); }
+    .resume-tab.active { color: var(--nerv-orange); border-bottom-color: var(--nerv-orange); }
+    .resume-tab-panel { display: none; flex: 1; overflow-y: auto; min-height: 0; font-family: var(--mono); font-size: 12px; line-height: 1.8; color: var(--text-secondary); white-space: pre-wrap; word-break: break-word; padding: 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-dim); scrollbar-width: none; }
+    .resume-tab-panel::-webkit-scrollbar { display: none; }
+    .resume-tab-panel.active { display: block; }
+    .resume-analysis-section h4 { font-family: var(--mono); font-size: 11px; color: var(--eva-amber); letter-spacing: 1.5px; margin-bottom: 8px; border-bottom: 1px solid rgba(255,184,0,0.12); padding-bottom: 6px; }
+    .resume-analysis-section p { margin: 4px 0; font-size: 11px; }
+    .resume-analysis-section ul { margin: 4px 0; padding-left: 16px; }
+    .resume-analysis-section li { font-size: 11px; margin: 2px 0; }
+    .chat-msg { margin-bottom: 10px; }
+    .chat-msg .chat-role { font-family: var(--mono); font-size: 9px; letter-spacing: 1px; margin-bottom: 2px; }
+    .chat-msg.assistant .chat-role { color: var(--nerv-orange); }
+    .chat-msg.user .chat-role { color: var(--eva-purple); }
+    .chat-msg .chat-text { font-size: 12px; line-height: 1.6; }
+    .chat-empty { text-align: center; padding: 30px; color: var(--text-muted); font-family: var(--mono); font-size: 12px; }
+    .resume-modal-actions { display: flex; gap: 10px; margin-top: 14px; justify-content: flex-end; flex-shrink: 0; }
+
+    .sms-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 150; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
+    .sms-modal.active { display: flex; }
+    .sms-modal-content { background: var(--bg-panel); border: 1px solid var(--eva-amber); padding: 24px; width: 90%; max-width: 480px; }
+    .sms-modal-content h3 { font-family: var(--mono); font-size: 14px; color: var(--eva-amber); letter-spacing: 2px; margin: 0 0 14px; }
+    .sms-edit { font-family: var(--mono); font-size: 12px; color: var(--text-primary); line-height: 1.7; padding: 12px 16px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-dim); margin-bottom: 14px; white-space: pre-wrap; max-height: 200px; min-height: 100px; width: 100%; box-sizing: border-box; resize: vertical; outline: none; scrollbar-width: none; }
+    .sms-edit::-webkit-scrollbar { display: none; }
+    .sms-edit:focus { border-color: var(--eva-amber); box-shadow: 0 0 8px rgba(255,184,0,0.15); }
+    .sms-modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+
+    .magi-network { margin-top: auto; border: 1px solid var(--border-dim); background: var(--bg-glass); overflow: hidden; }
+    .magi-net-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: var(--eva-purple-dim); border-bottom: 1px solid var(--border-dim); }
+    .magi-net-title { font-family: var(--mono); font-size: 9px; font-weight: 700; color: var(--eva-purple); letter-spacing: 1.5px; }
+    .magi-net-badge { font-family: var(--mono); font-size: 8px; font-weight: 700; color: var(--eva-red); letter-spacing: 1px; padding: 1px 6px; background: var(--eva-red-dim); border: 1px solid rgba(255,45,45,0.2); animation: livePulse 2s ease-in-out infinite; }
+    @keyframes livePulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    .magi-net-nodes { padding: 8px 12px; display: flex; flex-direction: column; gap: 6px; }
+    .magi-node { display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.03); }
+    .node-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-muted); flex-shrink: 0; }
+    .node-dot.online { background: var(--eva-green); box-shadow: 0 0 6px var(--eva-green-glow); }
+    .node-dot.online.high { background: var(--eva-amber); box-shadow: 0 0 6px rgba(255,184,0,0.4); }
+    .node-dot.offline { background: var(--eva-red); box-shadow: 0 0 6px var(--eva-red-dim); }
+    .node-name { font-family: var(--mono); font-size: 10px; font-weight: 700; color: var(--eva-purple); letter-spacing: 1px; min-width: 72px; }
+    .node-loc { font-family: var(--mono); font-size: 9px; color: var(--text-muted); letter-spacing: 0.5px; flex: 1; }
+    .node-ping { font-family: var(--mono); font-size: 10px; font-weight: 600; color: var(--eva-green); letter-spacing: 0.5px; min-width: 42px; text-align: right; }
+    .node-ping.high { color: var(--eva-amber); }
+    .node-ping.offline { color: var(--eva-red); }
+    .magi-net-log { padding: 6px 12px 8px; max-height: 60px; overflow: hidden; border-top: 1px solid rgba(255,255,255,0.03); }
+    .magi-net-log .log-line { font-family: var(--mono); font-size: 8px; color: var(--text-muted); letter-spacing: 0.3px; line-height: 1.6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .magi-net-log .log-line .log-from { color: var(--eva-purple); }
+    .magi-net-log .log-line .log-to { color: var(--nerv-orange); }
+
+    .footer { display: flex; align-items: center; justify-content: center; gap: 14px; padding: 8px 28px; background: var(--bg-panel); border-top: 1px solid var(--border-dim); font-family: var(--mono); font-size: 11px; color: var(--text-muted); letter-spacing: 1px; flex-shrink: 0; }
+    .footer-sep { opacity: 0.3; }
+
+    .mobile-back { display: none; }
+
+    @media (max-width: 768px) {
+        body { overflow: auto; height: auto; }
+        .app { height: 100vh; height: 100dvh; }
+        .header { padding: 0 12px; height: 48px; }
+        .header-title { font-size: 12px; letter-spacing: 1px; }
+        .header-subtitle { display: none; }
+        .header-right { gap: 8px; }
+        .header-right a { font-size: 10px; padding: 4px 8px; }
+        .operator-id { display: none; }
+
+        .main { flex: 1; position: relative; overflow: hidden; }
+        .panel-left { width: 100%; min-width: unset; border-right: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 10; transition: transform 0.3s ease; }
+        .panel-left.mobile-hidden { transform: translateX(-100%); pointer-events: none; }
+        .panel-right { position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 9; }
+        .panel-right.mobile-hidden { transform: translateX(100%); pointer-events: none; }
+
+        .mobile-back { display: flex; align-items: center; gap: 6px; padding: 8px 16px; background: rgba(255,107,43,0.06); border-bottom: 1px solid var(--border-dim); cursor: pointer; font-family: var(--mono); font-size: 11px; color: var(--nerv-orange); letter-spacing: 1px; font-weight: 600; }
+        .mobile-back:hover { background: rgba(255,107,43,0.1); }
+
+        .panel-scroll { padding: 16px; }
+        .panel-label { padding: 8px 16px; font-size: 10px; }
+
+        .nav-item { padding: 12px 16px; font-size: 12px; }
+        .nav-item .icon { font-size: 16px; width: 20px; }
+        .nav-item .zh { display: none; }
+
+        .form-row { flex-direction: column; gap: 0; }
+        .form-group input, .form-group textarea { font-size: 13px; padding: 8px 12px; }
+
+        .job-detail-header { flex-direction: column; gap: 12px; }
+        .job-detail-actions { gap: 10px; }
+        .job-detail-title { font-size: 14px; }
+
+        .app-table { font-size: 11px; display: block; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; }
+        .app-table th, .app-table td { padding: 8px 6px; }
+        .app-table th .th-zh { display: none; }
+
+        .resume-modal-content { padding: 16px; width: 96%; max-height: 90vh; }
+        .resume-modal-content h3 { font-size: 12px; }
+        .resume-tabs { overflow-x: auto; }
+        .resume-tab { padding: 6px 12px; font-size: 10px; white-space: nowrap; }
+
+        .sms-modal-content { padding: 16px; width: 96%; }
+        .sms-modal-content h3 { font-size: 12px; }
+
+        .footer { padding: 6px 12px; font-size: 9px; gap: 8px; }
+        .footer-sep:nth-child(n+4) { display: none; }
+        #footerTime { display: none; }
+
+        .magi-network { display: none; }
+
+        .sec-title { font-size: 11px; margin-bottom: 12px; }
+        .sec-title .zh { display: none; }
+    }
+</style>
+</head>
+<body>
+<div class="bg-canvas">
+    <div class="bg-orb orb-hr1"></div>
+    <div class="bg-orb orb-hr2"></div>
+    <div class="bg-grid"></div>
+    <div class="scan-line"></div>
+</div>
+
+<div class="modal-overlay" id="disclaimerModal" style="display:none">
+    <div class="modal-card disclaimer-card">
+        <div class="modal-icon">
+            <img src="/static/img/wille.jpg" alt="WILLE" class="logo-img-lg">
+        </div>
+        <h2>DISCLAIMER / 免责声明</h2>
+        <div class="disclaimer-content">
+            <p>本平台所有分析结果、面试提问及评估建议均由人工智能模型自动生成，仅供参考。</p>
+            <p>AI 生成的内容可能存在偏差或错误，不构成任何专业人力资源决策的最终依据。</p>
+            <p>请结合实际情况独立判断，本平台不对因使用 AI 生成内容所做出的决策承担任何责任。</p>
+        </div>
+        <button class="btn-nerv" id="disclaimerConfirmBtn">I UNDERSTAND / 我已知晓</button>
+    </div>
+</div>
+
+<div class="app" id="appMain" style="display:none">
+    <header class="header">
+        <div class="header-left">
+            <div>
+                <div class="header-title">MARDUK INSTITUTE — HR v2.0</div>
+                <div class="header-subtitle">RECRUITMENT MANAGEMENT SYSTEM</div>
+            </div>
+        </div>
+
+        <div class="header-right">
+            <a href="/">🏠 HOME / 主页</a>
+            <a href="#" onclick="logoutSystem();return false;">⏻ LOGOUT / 退出系统</a>
+            <span class="operator-id" id="headerUser">--</span>
+        </div>
+    </header>
+
+    <main class="main">
+        <section class="panel-left">
+            <div class="panel-label">NAVIGATION / 导航</div>
+            <div style="padding:8px 0">
+                <div class="nav-item active" data-tab="jobs"><span class="icon">📋</span>POSTED JOBS<span class="zh">已发布岗位</span></div>
+                <div class="nav-item" data-tab="create"><span class="icon">✏️</span>NEW JOB<span class="zh">发布新岗位</span></div>
+                <div class="nav-item" data-tab="applications"><span class="icon">👥</span>APPLICATIONS<span class="zh">投递管理</span></div>
+            </div>
+            <div class="magi-network" id="magiNetwork">
+                <div class="magi-net-header">
+                    <span class="magi-net-title">MAGI NETWORK STATUS</span>
+                    <span class="magi-net-badge">LIVE</span>
+                </div>
+                <div class="magi-net-nodes">
+                    <div class="magi-node">
+                        <span class="node-dot online" id="dotT01"></span>
+                        <span class="node-name">MAGI-T01</span>
+                        <span class="node-loc">TOKYO-01</span>
+                        <span class="node-ping" id="pingT01">--ms</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel-right mobile-hidden" id="panelRight">
+            <div class="mobile-back" id="mobileBack" onclick="showLeftPanel()">← BACK / 返回</div>
+            <div class="panel-label" id="rightPanelLabel">POSTED JOBS / 已发布岗位</div>
+            <div class="panel-scroll">
+                <div class="tab-content active" id="tab-jobs">
+                    <div id="jobList"><div class="empty"><div class="icon">📋</div><p>NO JOBS POSTED YET</p><p class="zh">暂无已发布岗位</p></div></div>
+                    <div id="jobDetail" class="job-detail">
+                        <div class="job-detail-header">
+                            <div>
+                                <div class="job-detail-title" id="detailTitle">—</div>
+                                <div class="job-detail-meta" id="detailMeta">—</div>
+                            </div>
+                            <div class="job-detail-actions">
+                                <button class="btn-outline amber" style="padding:6px 14px;font-size:10px;min-width:auto" onclick="openEditJob()">✏️ EDIT / 编辑</button>
+                                <div class="job-toggle" onclick="toggleSelectedJobStatus()">
+                                    <span class="dot" id="detailStatusDot"></span>
+                                    <label id="detailStatusLabel"></label>
+                                </div>
+                                <div class="job-vi-switch">
+                                    <label>VI</label>
+                                    <label class="mini-toggle">
+                                        <input type="checkbox" id="detailVI" onchange="toggleSelectedVI()">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="detailDescription" style="font-family:var(--mono);font-size:12px;color:var(--text-secondary);line-height:1.7;white-space:pre-wrap;word-break:break-word"></div>
+
+                        <div id="editPanel" style="display:none">
+                            <div style="margin-bottom:12px"><label style="font-family:var(--mono);font-size:10px;color:var(--text-muted);letter-spacing:1px;display:block;margin-bottom:4px">JOB TITLE / 岗位名称</label><input type="text" id="editTitle" style="width:100%;box-sizing:border-box;padding:8px 12px;background:rgba(0,0,0,0.3);border:1px solid var(--border-dim);color:var(--text-primary);font-family:var(--mono);font-size:13px;outline:none"></div>
+                            <div style="display:flex;gap:10px;margin-bottom:12px"><div style="flex:1"><label style="font-family:var(--mono);font-size:10px;color:var(--text-muted);letter-spacing:1px;display:block;margin-bottom:4px">SALARY / 薪资</label><input type="text" id="editSalary" style="width:100%;box-sizing:border-box;padding:8px 12px;background:rgba(0,0,0,0.3);border:1px solid var(--border-dim);color:var(--text-primary);font-family:var(--mono);font-size:13px;outline:none"></div><div style="flex:1"><label style="font-family:var(--mono);font-size:10px;color:var(--text-muted);letter-spacing:1px;display:block;margin-bottom:4px">CITY / 城市</label><input type="text" id="editCity" style="width:100%;box-sizing:border-box;padding:8px 12px;background:rgba(0,0,0,0.3);border:1px solid var(--border-dim);color:var(--text-primary);font-family:var(--mono);font-size:13px;outline:none"></div></div>
+                            <div style="margin-bottom:12px"><label style="font-family:var(--mono);font-size:10px;color:var(--text-muted);letter-spacing:1px;display:block;margin-bottom:4px">REQUIREMENTS / 岗位要求</label><textarea id="editRequirements" rows="3" style="width:100%;box-sizing:border-box;padding:8px 12px;background:rgba(0,0,0,0.3);border:1px solid var(--border-dim);color:var(--text-primary);font-family:var(--mono);font-size:13px;outline:none;resize:vertical"></textarea></div>
+                            <div style="margin-bottom:12px"><label style="font-family:var(--mono);font-size:10px;color:var(--text-muted);letter-spacing:1px;display:block;margin-bottom:4px">DESCRIPTION (JD) / 职位描述</label><textarea id="editDescription" rows="5" style="width:100%;box-sizing:border-box;padding:8px 12px;background:rgba(0,0,0,0.3);border:1px solid var(--border-dim);color:var(--text-primary);font-family:var(--mono);font-size:13px;outline:none;resize:vertical"></textarea></div>
+                            <div style="display:flex;gap:10px">
+                                <button class="btn-nerv" onclick="saveEditJob()" style="padding:8px 20px;font-size:11px">SAVE / 保存</button>
+                                <button class="btn-outline amber" onclick="closeEditJob()" style="padding:8px 16px;font-size:11px;min-width:auto">CANCEL / 取消</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-content" id="tab-create">
+                    <div class="sec-title">CREATE JOB POSITION <span class="zh">创建招聘岗位</span></div>
+                    <div class="form-row">
+                        <div class="form-group"><label>JOB TITLE <span class="zh">岗位名称</span></label><input type="text" id="jobTitle" placeholder="如：高级Python开发"></div>
+                        <div class="form-group"><label>SALARY <span class="zh">薪资范围</span></label><input type="text" id="jobSalary" placeholder="如：20K-35K"></div>
+                    </div>
+                    <div class="form-group"><label>CITY <span class="zh">工作城市</span></label><input type="text" id="jobCity" placeholder="如：广州"></div>
+                    <div class="form-group"><label>REQUIREMENTS <span class="zh">岗位要求</span></label><textarea id="jobRequirements" placeholder="描述岗位要求、技能需求..."></textarea></div>
+                    <div class="form-group"><label>DESCRIPTION (JD) <span class="zh">职位描述</span></label><textarea id="jobDescription" placeholder="可点击AI生成 / Click AI Generate" style="height:100px"></textarea></div>
+                    <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+                        <button class="btn-outline amber" id="btnAiDesc">AI GENERATE JD / AI生成描述</button>
+                        <div class="toggle-row">
+                            <label>VIRTUAL INTERVIEW / 虚拟面试</label>
+                            <label class="toggle-switch"><input type="checkbox" id="virtualInterview"><span class="slider"></span></label>
+                            <span style="font-family:var(--mono);font-size:9px;color:var(--text-muted)" id="viLabel">OFF / 关闭</span>
+                        </div>
+                    </div>
+                    <button class="btn-nerv" id="btnCreateJob">PUBLISH JOB / 发布岗位</button>
+                </div>
+
+                <div class="tab-content" id="tab-applications">
+                    <div class="sec-title">SELECT JOB <span class="zh">选择岗位查看投递</span></div>
+                    <div id="appJobList" style="margin-bottom:16px"></div>
+                    <div id="appResults"><div class="empty"><div class="icon">👥</div><p>SELECT A JOB ABOVE</p><p class="zh">请先选择岗位</p></div></div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <span>MARDUK INSTITUTE</span>
+        <span class="footer-sep">|</span>
+        <span>HR PORTAL v2.0</span>
+        <span class="footer-sep">|</span>
+        <span>CLASSIFIED</span>
+        <span class="footer-sep">|</span>
+        <span id="footerTime">--:--:--</span>
+    </footer>
+</div>
+
+<div class="resume-modal" id="resumeModal">
+    <div class="resume-modal-content">
+        <h3>RESUME DETAILS <span style="font-size:10px;color:var(--text-muted);font-weight:400;margin-left:6px">简历详情</span></h3>
+        <div class="resume-tabs">
+            <div class="resume-tab active" data-rtab="original" onclick="switchResumeTab('original')">ORIGINAL / 原件</div>
+            <div class="resume-tab" data-rtab="chat" onclick="switchResumeTab('chat')">AI CHAT / 对话</div>
+            <div class="resume-tab" data-rtab="analysis" onclick="switchResumeTab('analysis')">AI ANALYSIS / 分析</div>
+        </div>
+        <div class="resume-tab-panel active" id="rtab-original"></div>
+        <div class="resume-tab-panel" id="rtab-chat"></div>
+        <div class="resume-tab-panel" id="rtab-analysis"></div>
+        <div class="resume-modal-actions">
+            <button class="btn-outline amber" onclick="closeResumeModal()">CLOSE / 关闭</button>
+        </div>
+    </div>
+</div>
+
+<div class="sms-modal" id="smsModal">
+    <div class="sms-modal-content">
+        <h3>SMS CENTER <span style="font-size:10px;color:var(--text-muted);font-weight:400;margin-left:6px">短信中心</span></h3>
+        <div style="font-family:var(--mono);font-size:11px;color:var(--text-muted);margin-bottom:10px" id="smsCandidate">—</div>
+        <div style="margin-bottom:10px">
+            <label style="display:block;font-family:var(--mono);font-size:10px;font-weight:600;color:var(--text-muted);letter-spacing:1px;margin-bottom:4px">REASON / REMARKS <span style="font-size:9px;opacity:0.5;margin-left:4px">原因/备注关键词</span></label>
+            <input type="text" id="smsReason" placeholder="Optional: e.g. skill mismatch, experience gap..." style="width:100%;box-sizing:border-box;padding:8px 12px;background:rgba(0,0,0,0.3);border:1px solid var(--border-dim);color:var(--text-primary);font-family:var(--mono);font-size:12px;outline:none">
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:12px">
+            <button class="btn-outline amber" style="padding:7px 16px;font-size:10px;flex:1" id="btnGenInvite" onclick="generateSms('invite')">INVITE / 预约面试</button>
+            <button class="btn-outline red" style="padding:7px 16px;font-size:10px;flex:1" id="btnGenReject" onclick="generateSms('reject')">REJECT / 婉拒</button>
+        </div>
+        <textarea class="sms-edit" id="smsContent" placeholder="Click INVITE or REJECT above to generate..."></textarea>
+        <div class="sms-modal-actions" style="display:flex;gap:10px;justify-content:flex-end;align-items:center">
+            <button class="btn-outline amber" style="width:120px!important;height:36px!important;padding:0!important;font-size:11px!important;line-height:36px!important" onclick="closeSmsModal()">CANCEL</button>
+            <button class="btn-nerv" style="width:120px!important;height:36px!important;padding:0!important;font-size:11px!important;line-height:36px!important" id="btnConfirmSms">CONFIRM SEND</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const token = localStorage.getItem('auth_token');
+if (!token) window.location.href = '/v1?redirect=' + encodeURIComponent(window.location.pathname);
+const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+
+if (!sessionStorage.getItem('disclaimer_confirmed')) {
+    document.getElementById('disclaimerModal').style.display = 'flex';
+    document.getElementById('disclaimerConfirmBtn').addEventListener('click', () => {
+        document.getElementById('disclaimerModal').style.display = 'none';
+        sessionStorage.setItem('disclaimer_confirmed', '1');
+        document.getElementById('appMain').style.display = '';
+    });
+} else {
+    document.getElementById('appMain').style.display = '';
+}
+
+const labelMap = { 'jobs': 'POSTED JOBS / 已发布岗位', 'create': 'NEW JOB / 发布新岗位', 'applications': 'APPLICATIONS / 投递管理' };
+
+function isMobile() { return window.innerWidth <= 768; }
+
+function showRightPanel() {
+    document.getElementById('panelRight').classList.remove('mobile-hidden');
+    document.querySelector('.panel-left').classList.add('mobile-hidden');
+}
+
+function showLeftPanel() {
+    document.querySelector('.panel-left').classList.remove('mobile-hidden');
+    document.getElementById('panelRight').classList.add('mobile-hidden');
+}
+
+document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        item.classList.add('active');
+        document.getElementById(`tab-${item.dataset.tab}`).classList.add('active');
+        document.getElementById('rightPanelLabel').textContent = labelMap[item.dataset.tab] || '';
+        if (isMobile()) showRightPanel();
+    });
+});
+
+document.getElementById('virtualInterview').addEventListener('change', function() {
+    document.getElementById('viLabel').textContent = this.checked ? 'ON / 开启' : 'OFF / 关闭';
+});
+
+setInterval(() => { document.getElementById('footerTime').textContent = new Date().toLocaleTimeString(); }, 1000);
+
+try { const payload = JSON.parse(atob(token.split('.')[1])); document.getElementById('headerUser').textContent = payload.username || '--'; } catch(e) {}
+
+let selectedJobId = null;
+let jobsData = [];
+
+async function loadJobs() {
+    const res = await fetch('/api/v2/jobs', { headers });
+    jobsData = await res.json();
+    const list = document.getElementById('jobList');
+    const appList = document.getElementById('appJobList');
+    if (!jobsData.length) {
+        list.innerHTML = '<div class="empty"><div class="icon">📋</div><p>NO JOBS POSTED YET</p><p class="zh">暂无已发布岗位</p></div>';
+        appList.innerHTML = '';
+        return;
+    }
+    list.innerHTML = jobsData.map((j, i) => `
+        <div class="job-item" data-id="${j.id}" onclick="toggleJobDetail(${j.id})">
+            <div class="job-item-title">${j.title}</div>
+            <div class="job-item-meta">${j.city||'—'} | ${j.salary_range||'—'}</div>
+        </div>
+    `).join('');
+    appList.innerHTML = jobsData.map(j => `
+        <div class="job-item" onclick="loadApplications(${j.id})">
+            <div class="job-item-title">${j.title}</div>
+            <div class="job-item-meta">${j.city||'—'} | ${j.salary_range||'—'}</div>
+        </div>
+    `).join('');
+}
+
+function toggleJobDetail(id) {
+    const detailEl = document.getElementById('jobDetail');
+    const isShowing = detailEl.classList.contains('active') && selectedJobId === id;
+    closeEditJob();
+    if (isShowing) {
+        detailEl.classList.remove('active');
+        document.querySelectorAll('#jobList .job-item').forEach(el => el.classList.remove('active'));
+        selectedJobId = null;
+    } else {
+        selectJob(id);
+    }
+}
+
+function selectJob(id) {
+    selectedJobId = id;
+    const j = jobsData.find(x => x.id === id);
+    if (!j) return;
+
+    document.querySelectorAll('#jobList .job-item').forEach(el => el.classList.remove('active'));
+    const activeEl = document.querySelector(`#jobList .job-item[data-id="${id}"]`);
+    if (activeEl) activeEl.classList.add('active');
+
+    document.getElementById('detailTitle').textContent = j.title;
+    document.getElementById('detailMeta').textContent = `${j.city||'—'}  |  ${j.salary_range||'—'}  |  Created: ${new Date(j.created_at).toLocaleDateString()}`;
+    document.getElementById('detailDescription').textContent = j.description || 'No description provided.';
+    document.getElementById('detailStatusDot').className = 'dot ' + (j.status==='open'?'on':'off');
+    document.getElementById('detailStatusLabel').textContent = j.status==='open'?'OPEN / 招聘中':'CLOSED / 已关闭';
+    document.getElementById('detailVI').checked = !!j.virtual_interview;
+
+    document.getElementById('editPanel').style.display = 'none';
+    document.getElementById('detailDescription').style.display = 'block';
+    document.getElementById('jobDetail').classList.add('active');
+}
+
+function openEditJob() {
+    if (!selectedJobId) return;
+    const j = jobsData.find(x => x.id === selectedJobId);
+    if (!j) return;
+    document.getElementById('editTitle').value = j.title || '';
+    document.getElementById('editSalary').value = j.salary_range || '';
+    document.getElementById('editCity').value = j.city || '';
+    document.getElementById('editRequirements').value = j.requirements || '';
+    document.getElementById('editDescription').value = j.description || '';
+    document.getElementById('detailDescription').style.display = 'none';
+    document.getElementById('editPanel').style.display = 'block';
+}
+
+function closeEditJob() {
+    document.getElementById('editPanel').style.display = 'none';
+    document.getElementById('detailDescription').style.display = 'block';
+}
+
+async function saveEditJob() {
+    if (!selectedJobId) return;
+    const btn = event.target;
+    btn.textContent = 'SAVING...'; btn.disabled = true;
+    try {
+        const res = await fetch(`/api/v2/jobs/${selectedJobId}`,{
+            method:'PUT',
+            headers,
+            body:JSON.stringify({
+                title: document.getElementById('editTitle').value.trim(),
+                salary_range: document.getElementById('editSalary').value.trim(),
+                city: document.getElementById('editCity').value.trim(),
+                requirements: document.getElementById('editRequirements').value.trim(),
+                description: document.getElementById('editDescription').value.trim()
+            })
+        });
+        if (!res.ok) { const d=await res.json(); alert(d.error); return; }
+        closeEditJob();
+        await loadJobs();
+        selectJob(selectedJobId);
+    } catch(e) { alert('保存失败'); }
+    finally { btn.textContent='SAVE / 保存'; btn.disabled=false; }
+}
+
+function toggleSelectedJobStatus() {
+    if (!selectedJobId) return;
+    const j = jobsData.find(x => x.id === selectedJobId);
+    if (!j) return;
+    toggleJobStatus(selectedJobId, j.status==='open'?'closed':'open');
+}
+
+function toggleSelectedVI() {
+    if (!selectedJobId) return;
+    const checked = document.getElementById('detailVI').checked;
+    toggleVI(selectedJobId, checked?1:0);
+}
+
+async function toggleJobStatus(id, s) {
+    await fetch(`/api/v2/jobs/${id}`,{method:'PUT',headers,body:JSON.stringify({status:s})});
+    await loadJobs();
+    if(selectedJobId===id) selectJob(id);
+}
+async function toggleVI(id, v) {
+    await fetch(`/api/v2/jobs/${id}`,{method:'PUT',headers,body:JSON.stringify({virtual_interview:v})});
+    await loadJobs();
+    if(selectedJobId===id) selectJob(id);
+}
+
+function logoutSystem() {
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('auth_username');
+    window.location.href = '/v1';
+}
+
+document.getElementById('btnAiDesc').addEventListener('click', async () => {
+    const btn = document.getElementById('btnAiDesc');
+    const title = document.getElementById('jobTitle').value.trim();
+    if (!title) { alert('请先输入岗位名称'); return; }
+    btn.disabled = true; btn.textContent = 'GENERATING...';
+    try {
+        const res = await fetch('/api/v2/ai/job-desc',{method:'POST',headers,body:JSON.stringify({title,requirements:document.getElementById('jobRequirements').value,salary_range:document.getElementById('jobSalary').value,city:document.getElementById('jobCity').value})});
+        const data = await res.json();
+        if (data.description) document.getElementById('jobDescription').value = data.description;
+    } catch(e) {} finally { btn.disabled = false; btn.textContent = 'AI GENERATE JD / AI生成描述'; }
+});
+
+document.getElementById('btnCreateJob').addEventListener('click', async () => {
+    const title = document.getElementById('jobTitle').value.trim();
+    const requirements = document.getElementById('jobRequirements').value.trim();
+    if (!title||!requirements) { alert('岗位名称和要求不能为空'); return; }
+    const btn = document.getElementById('btnCreateJob');
+    btn.disabled = true; btn.textContent = 'PUBLISHING...';
+    try {
+        const res = await fetch('/api/v2/jobs',{method:'POST',headers,body:JSON.stringify({title,description:document.getElementById('jobDescription').value.trim(),requirements,salary_range:document.getElementById('jobSalary').value.trim(),city:document.getElementById('jobCity').value.trim(),virtual_interview:document.getElementById('virtualInterview').checked})});
+        if (!res.ok) { const d=await res.json(); alert(d.error); return; }
+        ['jobTitle','jobRequirements','jobDescription','jobSalary','jobCity'].forEach(id=>document.getElementById(id).value='');
+        document.getElementById('virtualInterview').checked=false;
+        document.getElementById('viLabel').textContent='OFF / 关闭';
+        await loadJobs();
+        document.querySelector('[data-tab="jobs"]').click();
+    } catch(e) {} finally { btn.disabled = false; btn.textContent = 'PUBLISH JOB / 发布岗位'; }
+});
+
+let currentAppJobId = null;
+async function loadApplications(jobId) {
+    currentAppJobId = jobId;
+    const res = await fetch(`/api/v2/jobs/${jobId}/applications`,{headers});
+    const data = await res.json();
+    if (!res.ok) { alert(data.error); return; }
+    const apps = data.applications || [];
+    const area = document.getElementById('appResults');
+    if (!apps.length) { area.innerHTML = '<div class="empty"><div class="icon">👥</div><p>NO APPLICATIONS</p><p class="zh">暂无投递</p></div>'; return; }
+    const sl = {'pending':'PENDING','screened':'SCREENED','screened_pass':'PASS ✓','screened_reject':'REJECT ✗','interview_invited':'INVITED','accepted':'ACCEPTED'};
+    area.innerHTML = `<table class="app-table"><thead><tr><th>APPLICANT<span class="th-zh">申请人</span></th><th>RESUME<span class="th-zh">简历</span></th><th>STATUS<span class="th-zh">状态</span></th><th>SCORE<span class="th-zh">匹配度</span></th><th>ACTIONS<span class="th-zh">操作</span></th></tr></thead><tbody>${apps.map(a=>{const sc=a.screening_score>=70?'high':a.screening_score>=40?'mid':'low';return`<tr><td style="font-weight:700;font-family:var(--mono)">${a.username||'—'}</td><td style="font-size:10px;color:var(--text-muted)">${a.filename||'—'}</td><td><span class="app-status ${a.status}">${sl[a.status]||a.status}</span></td><td>${a.screening_score?`<span class="score ${sc}">${a.screening_score}%</span>`:'—'}</td><td style="display:flex;gap:4px;flex-wrap:wrap"><button class="btn-outline blue" style="min-width:auto;padding:4px 10px;font-size:9px" onclick="viewResume(${a.resume_id},${a.id},'${(a.filename||'').replace(/'/g,"\\'")}')">VIEW / 查看</button>${a.status==='pending'?`<button class="btn-outline green" style="min-width:auto;padding:4px 10px;font-size:9px" onclick="screenApp(${a.id})">AI SCREEN</button>`:''}<button class="btn-outline amber" style="min-width:auto;padding:4px 10px;font-size:9px" onclick="sendSms(${a.id})">SMS</button></td></tr>`;}).join('')}</tbody></table>`;
+}
+
+async function screenApp(id) { if(!confirm('确认AI筛选？'))return; const r=await fetch(`/api/v2/applications/${id}/screen`,{method:'POST',headers}); const d=await r.json(); if(!r.ok){alert(d.error);return;} alert(`筛选完成: ${d.score}% — ${d.status}`); if(currentAppJobId)loadApplications(currentAppJobId); }
+
+function switchResumeTab(tab) {
+    document.querySelectorAll('.resume-tab').forEach(t => t.classList.toggle('active', t.dataset.rtab === tab));
+    document.querySelectorAll('.resume-tab-panel').forEach(p => p.classList.toggle('active', p.id === `rtab-${tab}`));
+}
+
+async function viewResume(resumeId, applicationId, filename) {
+    document.getElementById('rtab-original').textContent = 'Loading...';
+    document.getElementById('rtab-chat').innerHTML = '';
+    document.getElementById('rtab-analysis').innerHTML = '';
+    switchResumeTab('original');
+    document.getElementById('resumeModal').classList.add('active');
+    try {
+        const res = await fetch(`/api/v2/hr/resume/${resumeId}?application_id=${applicationId}`, { headers });
+        const data = await res.json();
+        if (!res.ok) { document.getElementById('rtab-original').textContent = data.error || '加载失败'; return; }
+        document.getElementById('rtab-original').textContent = data.content || '无内容';
+        if (data.chat_history && data.chat_history.length) {
+            document.getElementById('rtab-chat').innerHTML = data.chat_history.map(m =>
+                `<div class="chat-msg ${m.role}"><div class="chat-role">${m.role === 'assistant' ? 'MAGI AI' : m.role === 'user' ? 'CANDIDATE' : m.role.toUpperCase()}</div><div class="chat-text">${m.content.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>')}</div></div>`
+            ).join('');
+        } else {
+            document.getElementById('rtab-chat').innerHTML = '<div class="chat-empty">NO AI CONVERSATION / 暂无AI对话记录</div>';
+        }
+        if (data.analysis) {
+            const a = typeof data.analysis === 'string' ? JSON.parse(data.analysis) : data.analysis;
+            let html = '<div class="resume-analysis-section"><h4>AI ANALYSIS / AI分析结果</h4>';
+            if (a.name) html += `<p><strong>姓名：</strong>${a.name}</p>`;
+            if (a.title || a.current_role) html += `<p><strong>职位：</strong>${a.title || a.current_role}</p>`;
+            if (a.summary) html += `<p><strong>摘要：</strong>${a.summary}</p>`;
+            if (a.match_score !== undefined) html += `<p><strong>匹配度：</strong>${a.match_score}%</p>`;
+            if (a.strengths && a.strengths.length) html += `<p><strong>优势：</strong></p><ul>${a.strengths.map(s=>`<li>${s}</li>`).join('')}</ul>`;
+            if (a.weaknesses && a.weaknesses.length) html += `<p><strong>不足：</strong></p><ul>${a.weaknesses.map(s=>`<li>${s}</li>`).join('')}</ul>`;
+            if (a.skills && a.skills.length) html += `<p><strong>技能：</strong>${a.skills.join(', ')}</p>`;
+            html += '</div>';
+            document.getElementById('rtab-analysis').innerHTML = html;
+        } else {
+            document.getElementById('rtab-analysis').innerHTML = '<div class="chat-empty">NO AI ANALYSIS / 暂无AI分析</div>';
+        }
+    } catch(e) { document.getElementById('rtab-original').textContent = '网络错误'; }
+}
+
+function closeResumeModal() { document.getElementById('resumeModal').classList.remove('active'); }
+
+let smsAppId = null;
+let smsType = null;
+async function sendSms(appId) {
+    smsAppId = appId;
+    smsType = null;
+    document.getElementById('smsReason').value = '';
+    document.getElementById('smsContent').value = '';
+    document.getElementById('smsCandidate').textContent = '—';
+    document.getElementById('smsModal').classList.add('active');
+}
+
+function closeSmsModal() { document.getElementById('smsModal').classList.remove('active'); }
+
+async function generateSms(type) {
+    if (!smsAppId) return;
+    smsType = type;
+    const reason = document.getElementById('smsReason').value.trim();
+    const btn = type === 'invite' ? document.getElementById('btnGenInvite') : document.getElementById('btnGenReject');
+    const otherBtn = type === 'invite' ? document.getElementById('btnGenReject') : document.getElementById('btnGenInvite');
+    btn.disabled = true; btn.textContent = 'GENERATING...';
+    otherBtn.disabled = true;
+    document.getElementById('smsContent').value = '';
+    try {
+        const endpoint = type === 'invite' ? `/api/v2/applications/${smsAppId}/sms` : `/api/v2/applications/${smsAppId}/reject-sms`;
+        const body = type === 'invite' ? {} : { reason: reason };
+        const res = await fetch(endpoint, { method: 'POST', headers, body: JSON.stringify(body) });
+        const data = await res.json();
+        if (!res.ok) { document.getElementById('smsContent').value = data.error || '生成失败'; return; }
+        document.getElementById('smsContent').value = data.sms_content;
+        document.getElementById('smsCandidate').textContent = data.candidate || '—';
+    } catch(e) { document.getElementById('smsContent').value = '网络错误'; }
+    finally {
+        btn.disabled = false; btn.textContent = type === 'invite' ? 'INVITE / 预约面试' : 'REJECT / 婉拒';
+        otherBtn.disabled = false;
+    }
+}
+
+document.getElementById('btnConfirmSms').addEventListener('click', async () => {
+    if (!smsAppId) return;
+    if (!smsType) { alert('请先选择 INVITE 或 REJECT 生成短信内容'); return; }
+    const btn = document.getElementById('btnConfirmSms');
+    const smsText = document.getElementById('smsContent').value.trim();
+    if (!smsText) { alert('短信内容不能为空'); return; }
+    btn.disabled = true; btn.textContent = 'SENDING...';
+    try {
+        const endpoint = smsType === 'invite' ? `/api/v2/applications/${smsAppId}/sms` : `/api/v2/applications/${smsAppId}/reject-sms`;
+        await fetch(endpoint, { method: 'POST', headers, body: JSON.stringify({ sms_content: smsText }) });
+        const newStatus = smsType === 'invite' ? 'interview_invited' : 'screened_reject';
+        await fetch(`/api/v2/applications/${smsAppId}`, { method: 'PUT', headers, body: JSON.stringify({ status: newStatus }) });
+        closeSmsModal();
+        if (currentAppJobId) loadApplications(currentAppJobId);
+    } catch(e) { alert('发送失败'); }
+    finally { btn.disabled = false; btn.textContent = 'CONFIRM SEND'; }
+});
+
+loadJobs();
+
+(function initMagiNetwork() {
+    const updatePing = () => {
+        const el = document.getElementById('pingT01');
+        const dot = document.getElementById('dotT01');
+        if (!el) return;
+        const ping = 3 + Math.floor(Math.random() * 8);
+        el.textContent = ping + 'ms';
+        el.className = 'node-ping';
+        if (dot) dot.className = 'node-dot online';
+    };
+    updatePing();
+    setInterval(updatePing, 2000 + Math.random() * 1000);
+})();
+</script>
+</body>
+</html>
