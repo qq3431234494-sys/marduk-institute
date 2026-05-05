@@ -19,16 +19,16 @@
 
     .app { display: flex; flex-direction: column; height: 100vh; position: relative; z-index: 2; }
 
-    .header { display: flex; align-items: center; padding: 0 28px; height: 64px; background: var(--bg-panel); border-bottom: 1px solid var(--border-dim); flex-shrink: 0; }
-    .header-left { display: flex; align-items: center; gap: 16px; }
-    .header-title { font-family: var(--mono); font-size: 17px; font-weight: 700; color: var(--nerv-orange); letter-spacing: 2px; }
+    .header { display: flex; align-items: center; padding: 0 28px; height: 64px; background: var(--bg-panel); border-bottom: 1px solid var(--border-dim); flex-shrink: 0; flex-wrap: nowrap; overflow: hidden; }
+    .header-left { display: flex; align-items: center; gap: 16px; min-width: 0; flex-shrink: 1; overflow: hidden; }
+    .header-title { font-family: var(--mono); font-size: 17px; font-weight: 700; color: var(--nerv-orange); letter-spacing: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .header-subtitle { font-family: var(--mono); font-size: 11px; font-weight: 500; color: var(--text-muted); letter-spacing: 1.5px; margin-top: 2px; }
     .header-center { position: absolute; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; }
     .header-center .blink-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--nerv-orange); animation: blinkDot 2s infinite; }
     .header-center .status-label { font-family: var(--mono); font-size: 11px; font-weight: 600; color: var(--nerv-orange); letter-spacing: 1px; }
     @keyframes blinkDot { 0%,100%{opacity:1} 50%{opacity:0.3} }
-    .header-right { display: flex; align-items: center; gap: 14px; margin-left: auto; }
-    .header-right a { color: var(--text-muted); font-size: 12px; font-family: var(--mono); letter-spacing: 1px; text-decoration: none; padding: 6px 14px; border: 1px solid var(--border-dim); transition: all 0.3s; }
+    .header-right { display: flex; align-items: center; gap: 14px; margin-left: auto; flex-shrink: 0; }
+    .header-right a { color: var(--text-muted); font-size: 12px; font-family: var(--mono); letter-spacing: 1px; text-decoration: none; padding: 6px 14px; border: 1px solid var(--border-dim); transition: all 0.3s; white-space: nowrap; }
     .header-right a:hover { color: var(--nerv-orange); border-color: var(--nerv-orange); }
     .operator-id { font-family: var(--mono); font-size: 13px; color: var(--text-secondary); }
 
@@ -200,13 +200,15 @@
     @media (max-width: 768px) {
         body { overflow: auto; height: auto; }
         .app { height: 100vh; height: 100dvh; }
-        .header { padding: 0 12px; height: 48px; }
+        .header { padding: 0 10px; height: auto; min-height: 48px; flex-wrap: wrap; padding-top: 8px; padding-bottom: 8px; gap: 6px; }
+        .header-left { gap: 8px; flex: 1 1 100%; }
+        .header-left img { height: 28px; }
         .header-title { font-size: 12px; letter-spacing: 1px; }
         .header-subtitle { display: none; }
-        .hide-mobile { display: none !important; }
-        .show-mobile { display: inline-flex !important; }
-        .header-right { gap: 6px; }
-        .header-right a { font-size: 10px; padding: 4px 8px; }
+        .header-right { gap: 6px; flex: 1 1 100%; justify-content: flex-end; }
+        .header-right a { font-size: 10px; padding: 4px 8px; letter-spacing: 0; }
+        .header-right a .zh-text { display: none; }
+        .operator-id { display: none; }
 
         .main { flex: 1; position: relative; overflow: hidden; }
         .panel-left { width: 100%; min-width: unset; border-right: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 10; transition: transform 0.3s ease; }
@@ -265,7 +267,7 @@
 <div class="modal-overlay" id="disclaimerModal" style="display:none">
     <div class="modal-card disclaimer-card">
         <div class="modal-icon">
-            <img src="/static/img/团队logo.png" alt="MARDUK" class="logo-img-lg">
+            <img src="/static/img/team-logo.png" alt="MARDUK" class="logo-img-lg">
         </div>
         <h2>DISCLAIMER / 免责声明</h2>
         <div class="disclaimer-content">
@@ -280,7 +282,7 @@
 <div class="app" id="appMain" style="display:none">
     <header class="header">
         <div class="header-left">
-            <img src="/static/img/团队logo.png" alt="MARDUK" class="hide-mobile" style="height:36px;margin-right:10px;border-radius:4px;">
+            <img src="/static/img/team-logo.png" alt="MARDUK" style="height:36px;margin-right:10px;border-radius:4px;">
             <div>
                 <div class="header-title">MARDUK INSTITUTE — HR v2.0</div>
                 <div class="header-subtitle">RECRUITMENT MANAGEMENT SYSTEM</div>
@@ -288,11 +290,9 @@
         </div>
 
         <div class="header-right">
-            <a href="/" class="hide-mobile" title="HOME / 主页">🏠 HOME</a>
-            <a href="/" class="show-mobile" title="HOME" style="display:none;">🏠</a>
-            <a href="#" onclick="logoutSystem();return false;" class="hide-mobile" title="LOGOUT / 退出系统">⏻ LOGOUT</a>
-            <a href="#" onclick="logoutSystem();return false;" class="show-mobile" title="LOGOUT" style="display:none;">⏻</a>
-            <span class="operator-id hide-mobile" id="headerUser">--</span>
+            <a href="/">🏠 HOME</a>
+            <a href="#" onclick="logoutSystem();return false;">⏻ LOGOUT</a>
+            <span class="operator-id" id="headerUser">--</span>
         </div>
     </header>
 

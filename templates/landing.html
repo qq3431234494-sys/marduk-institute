@@ -94,15 +94,56 @@
     .footer .blink-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--nerv-orange); animation: blinkDot 2s infinite; vertical-align: middle; margin-right: 6px; }
 
     @media (max-width: 768px) {
-        .product-grid { grid-template-columns: 1fr; }
-        .tech-grid { grid-template-columns: 1fr; }
-        .flow-steps { flex-direction: column; }
-        .flow-arrow { transform: rotate(90deg); justify-content: center; }
-        .hero h2 { font-size: 30px; letter-spacing: 2px; }
-        .hero { padding: 50px 20px 40px; }
-        .content { padding: 0 20px; }
-        .header { padding: 0 16px; }
+        .header { padding: 0 12px; height: auto; min-height: 48px; flex-wrap: wrap; gap: 6px; padding-top: 8px; padding-bottom: 8px; }
+        .header-left { gap: 8px; flex: 1 1 100%; }
+        .header-left img { height: 28px; }
+        .header-title { font-size: 13px; letter-spacing: 1px; }
+        .header-sub { display: none; }
+        .header-right { gap: 6px; flex: 1 1 100%; justify-content: flex-end; }
+        .header-right a { font-size: 10px; padding: 4px 8px; letter-spacing: 0; }
         .header-center { display: none; }
+
+        .hero { padding: 28px 16px 20px; }
+        .hero-badge { font-size: 9px; letter-spacing: 1px; padding: 4px 12px; margin-bottom: 14px; }
+        .hero h2 { font-size: 22px; letter-spacing: 1px; }
+        .hero .hero-sub { font-size: 13px; letter-spacing: 0; line-height: 1.5; }
+        .hero .hero-sub .zh { font-size: 12px; margin-top: 4px; }
+
+        .content { padding: 0 12px; }
+        .section-label { font-size: 11px; letter-spacing: 1px; margin-bottom: 14px; padding-bottom: 8px; }
+
+        .product-grid { grid-template-columns: 1fr; gap: 14px; margin-bottom: 28px; }
+        .product-card { padding: 18px; }
+        .product-card .version { font-size: 36px; top: 4px; right: 10px; }
+        .product-card .card-icon { font-size: 24px; margin-bottom: 10px; }
+        .product-card h3 { font-size: 15px; letter-spacing: 1px; }
+        .product-card h3 .zh-sub { font-size: 11px; margin-left: 6px; }
+        .product-card .card-desc { font-size: 12px; line-height: 1.5; margin: 10px 0; }
+        .product-card .card-desc .zh { font-size: 11px; margin-top: 4px; }
+        .product-card .features { margin: 12px 0; }
+        .product-card .features li { font-size: 11px; padding: 4px 0; }
+        .product-card .features li .zh { display: none; }
+        .btn-enter { padding: 8px 16px; font-size: 11px; letter-spacing: 1px; }
+
+        .tech-section { margin-bottom: 28px; }
+        .tech-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+        .tech-card { padding: 14px; }
+        .tech-card .tech-icon { font-size: 22px; margin-bottom: 8px; }
+        .tech-card h4 { font-size: 11px; letter-spacing: 0.5px; }
+        .tech-card h4 .zh { display: none; }
+        .tech-card p { font-size: 10px; line-height: 1.4; margin-top: 4px; }
+        .tech-card p .zh { display: none; }
+
+        .flow-section { margin-bottom: 28px; }
+        .flow-steps { flex-direction: column; gap: 8px; }
+        .flow-arrow { transform: rotate(90deg); justify-content: center; padding: 0; font-size: 14px; }
+        .flow-step { padding: 12px; }
+        .flow-step .step-num { font-size: 20px; margin-bottom: 4px; }
+        .flow-step h5 { font-size: 11px; }
+        .flow-step h5 .zh { display: none; }
+        .flow-step p { font-size: 10px; line-height: 1.4; }
+
+        .footer { padding: 14px 16px; font-size: 9px; letter-spacing: 1px; line-height: 1.6; }
     }
 </style>
 </head>
@@ -118,7 +159,7 @@
 <div class="landing">
     <header class="header">
         <div class="header-left">
-            <img src="/static/img/团队logo.png" alt="MARDUK" style="height:40px;margin-right:12px;border-radius:4px;">
+            <img src="/static/img/team-logo.png" alt="MARDUK" style="height:40px;margin-right:12px;border-radius:4px;">
             <div>
                 <div class="header-title">MARDUK INSTITUTE</div>
                 <div class="header-sub">AI HUMAN RESOURCES DIVISION / 人工智能人力资源部</div>
