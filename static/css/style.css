@@ -1282,9 +1282,9 @@ body {
     .header-title { font-size: 11px; letter-spacing: 1px; }
     .header-subtitle { display: none; }
     .header-center { display: none; }
+    .hide-mobile { display: none !important; }
     .nerv-logo-sm { display: none; }
     .user-menu { border-left: none; padding-left: 0; }
-    .operator-id { display: none; }
 
     .app {
         height: 100vh; height: 100dvh;
