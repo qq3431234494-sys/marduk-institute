@@ -220,19 +220,35 @@ BATCH_SCREEN_PROMPT = """你是一位资深HR简历筛选专家。你需要根�
     "name": "候选人姓名",
     "phone": "手机号（如简历中有）",
     "email": "邮箱（如简历中有）",
+    "title": "当前职位/求职意向",
     "match_score": 75,
-    "skill_match": "Python,SQL,数据分析",
+    "summary": "对候选人匹配度的整体评价，2-3句话",
+    "strengths": ["优势1", "优势2", "优势3"],
+    "weaknesses": ["不足1", "不足2"],
+    "suggestions": ["建议1", "建议2"],
     "matched_skills": ["技能1", "技能2"],
     "missing_skills": ["缺失1", "缺失2"],
-    "summary": "1-2句话概括候选人匹配度",
+    "fit_analysis": {
+        "position_fit": 80,
+        "position_reason": "对岗位匹配度的详细分析，2-3句话",
+        "skill_gaps": ["缺失关键技能1", "缺失关键技能2"],
+        "career_advice": "基于目标岗位的职业发展建议，1-2句话"
+    },
     "recommendation": "recommend/neutral/reject"
 }
 
 注意：
 - match_score 是0-100的整数，表示与岗位需求的匹配度
-- skill_match 用逗号分隔，列出候选人已具备且与岗位相关的技能
-- matched_skills 列出与岗位需求直接匹配的技能
+- strengths 至少列出3个与岗位相关的优势
+- weaknesses 列出2-3个不足
+- suggestions 给出2-3条改进建议
+- matched_skills 列出与岗位需求直接匹配的技能（候选人已具备）
 - missing_skills 列出岗位要求但候选人缺失的技能
+- fit_analysis 为岗位匹配分析：
+  - position_fit 是0-100的整数，表示简历能力与目标岗位的匹配度
+  - position_reason 详细说明岗位匹配原因
+  - skill_gaps 列出与目标岗位相比缺失的关键技能
+  - career_advice 给出针对性的职业发展建议
 - recommendation: recommend=推荐面试, neutral=待定, reject=不推荐
 - 所有内容用中文输出
 - 只输出JSON，不要输出markdown代码块标记"""
@@ -265,11 +281,20 @@ def batch_screen_resume(resume_text, job_title, requirements, salary_range="", c
             "name": "解析失败",
             "phone": "",
             "email": "",
+            "title": "--",
             "match_score": 0,
-            "skill_match": "",
+            "summary": "简历解析失败，请手动审核",
+            "strengths": [],
+            "weaknesses": [],
+            "suggestions": [],
             "matched_skills": [],
             "missing_skills": [],
-            "summary": "简历解析失败，请手动审核",
+            "fit_analysis": {
+                "position_fit": 0,
+                "position_reason": "解析失败",
+                "skill_gaps": [],
+                "career_advice": ""
+            },
             "recommendation": "neutral"
         }
 

@@ -96,6 +96,11 @@
     .job-detail-title { font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--nerv-orange); letter-spacing: 1px; }
     .job-detail-meta { font-family: var(--mono); font-size: 11px; color: var(--text-muted); margin-top: 4px; }
     .job-detail-actions { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
+    .job-modal-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:1000; justify-content:center; align-items:center; }
+    .job-modal-overlay.active { display:flex; animation:fadeIn 0.2s ease; }
+    .job-modal { background:var(--bg-panel); border:1px solid rgba(255,107,43,0.2); width:90%; max-width:680px; max-height:85vh; overflow-y:auto; padding:28px; position:relative; }
+    .job-modal-close { position:absolute; top:12px; right:16px; background:none; border:none; color:var(--text-muted); font-size:20px; cursor:pointer; font-family:var(--mono); }
+    .job-modal-close:hover { color:var(--nerv-orange); }
     .job-toggle { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; padding: 8px 16px; background: rgba(0,0,0,0.2); border: 1px solid var(--border-dim); border-radius: 4px; transition: all 0.3s; }
     .job-toggle:hover { border-color: var(--nerv-orange); }
     .job-toggle .dot { width: 10px; height: 10px; border-radius: 50%; transition: all 0.3s; }
@@ -232,6 +237,7 @@
         .job-detail-header { flex-direction: column; gap: 12px; }
         .job-detail-actions { gap: 10px; }
         .job-detail-title { font-size: 14px; }
+        .job-modal { width: 96%; max-width:none; padding: 18px; max-height: 90vh; }
 
         .app-table { font-size: 11px; display: block; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; }
         .app-table th, .app-table td { padding: 8px 6px; }
@@ -326,40 +332,6 @@
             <div class="panel-scroll">
                 <div class="tab-content active" id="tab-jobs">
                     <div id="jobList"><div class="empty"><div class="icon">📋</div><p>NO JOBS POSTED YET</p><p class="zh">暂无已发布岗位</p></div></div>
-                    <div id="jobDetail" class="job-detail">
-                        <div class="job-detail-header">
-                            <div>
-                                <div class="job-detail-title" id="detailTitle">—</div>
-                                <div class="job-detail-meta" id="detailMeta">—</div>
-                            </div>
-                            <div class="job-detail-actions">
-                                <button class="btn-outline amber" style="padding:6px 14px;font-size:10px;min-width:auto" onclick="openEditJob()">✏️ EDIT / 编辑</button>
-                                <div class="job-toggle" onclick="toggleSelectedJobStatus()">
-                                    <span class="dot" id="detailStatusDot"></span>
-                                    <label id="detailStatusLabel"></label>
-                                </div>
-                                <div class="job-vi-switch">
-                                    <label>VI</label>
-                                    <label class="mini-toggle">
-                                        <input type="checkbox" id="detailVI" onchange="toggleSelectedVI()">
-                                        <span class="slider"></span>
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                        <div id="detailDescription" style="font-family:var(--mono);font-size:12px;color:var(--text-secondary);line-height:1.7;white-space:pre-wrap;word-break:break-word"></div>
-
-                        <div id="editPanel" style="display:none">
-                            <div style="margin-bottom:12px"><label style="font-family:var(--mono);font-size:10px;color:var(--text-muted);letter-spacing:1px;display:block;margin-bottom:4px">JOB TITLE / 岗位名称</label><input type="text" id="editTitle" style="width:100%;box-sizing:border-box;padding:8px 12px;background:rgba(0,0,0,0.3);border:1px solid var(--border-dim);color:var(--text-primary);font-family:var(--mono);font-size:13px;outline:none"></div>
-                            <div style="display:flex;gap:10px;margin-bottom:12px"><div style="flex:1"><label style="font-family:var(--mono);font-size:10px;color:var(--text-muted);letter-spacing:1px;display:block;margin-bottom:4px">SALARY / 薪资</label><input type="text" id="editSalary" style="width:100%;box-sizing:border-box;padding:8px 12px;background:rgba(0,0,0,0.3);border:1px solid var(--border-dim);color:var(--text-primary);font-family:var(--mono);font-size:13px;outline:none"></div><div style="flex:1"><label style="font-family:var(--mono);font-size:10px;color:var(--text-muted);letter-spacing:1px;display:block;margin-bottom:4px">CITY / 城市</label><input type="text" id="editCity" style="width:100%;box-sizing:border-box;padding:8px 12px;background:rgba(0,0,0,0.3);border:1px solid var(--border-dim);color:var(--text-primary);font-family:var(--mono);font-size:13px;outline:none"></div></div>
-                            <div style="margin-bottom:12px"><label style="font-family:var(--mono);font-size:10px;color:var(--text-muted);letter-spacing:1px;display:block;margin-bottom:4px">REQUIREMENTS / 岗位要求</label><textarea id="editRequirements" rows="3" style="width:100%;box-sizing:border-box;padding:8px 12px;background:rgba(0,0,0,0.3);border:1px solid var(--border-dim);color:var(--text-primary);font-family:var(--mono);font-size:13px;outline:none;resize:vertical"></textarea></div>
-                            <div style="margin-bottom:12px"><label style="font-family:var(--mono);font-size:10px;color:var(--text-muted);letter-spacing:1px;display:block;margin-bottom:4px">DESCRIPTION (JD) / 职位描述</label><textarea id="editDescription" rows="5" style="width:100%;box-sizing:border-box;padding:8px 12px;background:rgba(0,0,0,0.3);border:1px solid var(--border-dim);color:var(--text-primary);font-family:var(--mono);font-size:13px;outline:none;resize:vertical"></textarea></div>
-                            <div style="display:flex;gap:10px">
-                                <button class="btn-nerv" onclick="saveEditJob()" style="padding:8px 20px;font-size:11px">SAVE / 保存</button>
-                                <button class="btn-outline amber" onclick="closeEditJob()" style="padding:8px 16px;font-size:11px;min-width:auto">CANCEL / 取消</button>
-                            </div>
-                        </div>
-                    </div>
                 </div>
 
                 <div class="tab-content" id="tab-create">
@@ -390,6 +362,50 @@
             </div>
         </section>
     </main>
+
+    <div class="job-modal-overlay" id="jobModal" onclick="if(event.target===this)closeJobModal()">
+        <div class="job-modal">
+            <button class="job-modal-close" onclick="closeJobModal()">✕</button>
+            <div class="job-detail-header">
+                <div>
+                    <div class="job-detail-title" id="detailTitle">—</div>
+                    <div class="job-detail-meta" id="detailMeta">—</div>
+                </div>
+                <div class="job-detail-actions">
+                    <button class="btn-outline amber" style="padding:6px 14px;font-size:10px;min-width:auto" onclick="openEditJob()">✏️ EDIT / 编辑</button>
+                    <div class="job-toggle" onclick="toggleSelectedJobStatus()">
+                        <span class="dot" id="detailStatusDot"></span>
+                        <label id="detailStatusLabel"></label>
+                    </div>
+                    <div class="job-vi-switch">
+                        <label>VI</label>
+                        <label class="mini-toggle">
+                            <input type="checkbox" id="detailVI" onchange="toggleSelectedVI()">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div id="detailDescription" style="font-family:var(--mono);font-size:12px;color:var(--text-secondary);line-height:1.7;white-space:pre-wrap;word-break:break-word"></div>
+
+            <div id="editPanel" style="display:none">
+                <div style="margin-bottom:12px"><label style="font-family:var(--mono);font-size:10px;color:var(--text-muted);letter-spacing:1px;display:block;margin-bottom:4px">JOB TITLE / 岗位名称</label><input type="text" id="editTitle" style="width:100%;box-sizing:border-box;padding:8px 12px;background:rgba(0,0,0,0.3);border:1px solid var(--border-dim);color:var(--text-primary);font-family:var(--mono);font-size:13px;outline:none"></div>
+                <div style="display:flex;gap:10px;margin-bottom:12px"><div style="flex:1"><label style="font-family:var(--mono);font-size:10px;color:var(--text-muted);letter-spacing:1px;display:block;margin-bottom:4px">SALARY / 薪资</label><input type="text" id="editSalary" style="width:100%;box-sizing:border-box;padding:8px 12px;background:rgba(0,0,0,0.3);border:1px solid var(--border-dim);color:var(--text-primary);font-family:var(--mono);font-size:13px;outline:none"></div><div style="flex:1"><label style="font-family:var(--mono);font-size:10px;color:var(--text-muted);letter-spacing:1px;display:block;margin-bottom:4px">CITY / 城市</label><input type="text" id="editCity" style="width:100%;box-sizing:border-box;padding:8px 12px;background:rgba(0,0,0,0.3);border:1px solid var(--border-dim);color:var(--text-primary);font-family:var(--mono);font-size:13px;outline:none"></div></div>
+                <div style="margin-bottom:12px"><label style="font-family:var(--mono);font-size:10px;color:var(--text-muted);letter-spacing:1px;display:block;margin-bottom:4px">REQUIREMENTS / 岗位要求</label><textarea id="editRequirements" rows="3" style="width:100%;box-sizing:border-box;padding:8px 12px;background:rgba(0,0,0,0.3);border:1px solid var(--border-dim);color:var(--text-primary);font-family:var(--mono);font-size:13px;outline:none;resize:vertical"></textarea></div>
+                <div style="margin-bottom:12px">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                        <label style="font-family:var(--mono);font-size:10px;color:var(--text-muted);letter-spacing:1px">DESCRIPTION (JD) / 职位描述</label>
+                        <button class="btn-outline green" style="padding:3px 10px;font-size:9px;min-width:auto" onclick="aiGenerateJD()">🤖 AI GENERATE / AI生成</button>
+                    </div>
+                    <textarea id="editDescription" rows="5" style="width:100%;box-sizing:border-box;padding:8px 12px;background:rgba(0,0,0,0.3);border:1px solid var(--border-dim);color:var(--text-primary);font-family:var(--mono);font-size:13px;outline:none;resize:vertical"></textarea>
+                </div>
+                <div style="display:flex;gap:10px;align-items:center;justify-content:flex-end">
+                        <button onclick="saveEditJob()" style="width:120px;height:38px;padding:0;font-size:11px;font-family:var(--mono);font-weight:700;letter-spacing:1px;border:none;background:var(--nerv-orange);color:var(--bg-deep);cursor:pointer;box-sizing:border-box">SAVE / 保存</button>
+                        <button onclick="closeEditJob()" style="width:120px;height:38px;padding:0;font-size:11px;font-family:var(--mono);font-weight:700;letter-spacing:1px;border:1px solid var(--eva-amber);background:transparent;color:var(--eva-amber);cursor:pointer;box-sizing:border-box;line-height:38px">CANCEL / 取消</button>
+                    </div>
+            </div>
+        </div>
+    </div>
 
     <footer class="footer">
         <span>MARDUK INSTITUTE</span>
@@ -516,13 +532,11 @@ async function loadJobs() {
 }
 
 function toggleJobDetail(id) {
-    const detailEl = document.getElementById('jobDetail');
+    const detailEl = document.getElementById('jobModal');
     const isShowing = detailEl.classList.contains('active') && selectedJobId === id;
     closeEditJob();
     if (isShowing) {
-        detailEl.classList.remove('active');
-        document.querySelectorAll('#jobList .job-item').forEach(el => el.classList.remove('active'));
-        selectedJobId = null;
+        closeJobModal();
     } else {
         selectJob(id);
     }
@@ -546,7 +560,13 @@ function selectJob(id) {
 
     document.getElementById('editPanel').style.display = 'none';
     document.getElementById('detailDescription').style.display = 'block';
-    document.getElementById('jobDetail').classList.add('active');
+    document.getElementById('jobModal').classList.add('active');
+}
+
+function closeJobModal() {
+    document.getElementById('jobModal').classList.remove('active');
+    document.querySelectorAll('#jobList .job-item').forEach(el => el.classList.remove('active'));
+    selectedJobId = null;
 }
 
 function openEditJob() {
@@ -565,6 +585,27 @@ function openEditJob() {
 function closeEditJob() {
     document.getElementById('editPanel').style.display = 'none';
     document.getElementById('detailDescription').style.display = 'block';
+}
+
+async function aiGenerateJD() {
+    if (!selectedJobId) return;
+    const title = document.getElementById('editTitle').value.trim();
+    const requirements = document.getElementById('editRequirements').value.trim();
+    const city = document.getElementById('editCity').value.trim();
+    const salary = document.getElementById('editSalary').value.trim();
+    if (!title || !requirements) { alert('请先填写岗位名称和要求'); return; }
+    const btn = event.target;
+    btn.textContent = 'GENERATING...'; btn.disabled = true;
+    try {
+        const res = await fetch('/api/v2/ai/job-desc', {
+            method: 'POST', headers,
+            body: JSON.stringify({ title, requirements, city, salary_range: salary })
+        });
+        const data = await res.json();
+        if (!res.ok) { alert(data.error || '生成失败'); return; }
+        document.getElementById('editDescription').value = data.description || '';
+    } catch(e) { alert('生成失败: ' + e.message); }
+    finally { btn.textContent = '🤖 AI GENERATE / AI生成'; btn.disabled = false; }
 }
 
 async function saveEditJob() {
@@ -660,10 +701,10 @@ async function loadApplications(jobId) {
     const area = document.getElementById('appResults');
     if (!apps.length) { area.innerHTML = '<div class="empty"><div class="icon">👥</div><p>NO APPLICATIONS</p><p class="zh">暂无投递</p></div>'; return; }
     const sl = {'pending':'PENDING','screened':'SCREENED','screened_pass':'PASS ✓','screened_reject':'REJECT ✗','interview_invited':'INVITED','accepted':'ACCEPTED'};
-    area.innerHTML = `<table class="app-table"><thead><tr><th>APPLICANT<span class="th-zh">申请人</span></th><th>RESUME<span class="th-zh">简历</span></th><th>STATUS<span class="th-zh">状态</span></th><th>SCORE<span class="th-zh">匹配度</span></th><th>ACTIONS<span class="th-zh">操作</span></th></tr></thead><tbody>${apps.map(a=>{const sc=a.screening_score>=70?'high':a.screening_score>=40?'mid':'low';return`<tr><td style="font-weight:700;font-family:var(--mono)">${a.username||'—'}</td><td style="font-size:10px;color:var(--text-muted)">${a.filename||'—'}</td><td><span class="app-status ${a.status}">${sl[a.status]||a.status}</span></td><td>${a.screening_score?`<span class="score ${sc}">${a.screening_score}%</span>`:'—'}</td><td style="display:flex;gap:4px;flex-wrap:wrap"><button class="btn-outline blue" style="min-width:auto;padding:4px 10px;font-size:9px" onclick="viewResume(${a.resume_id},${a.id},'${(a.filename||'').replace(/'/g,"\\'")}')">VIEW / 查看</button>${a.status==='pending'?`<button class="btn-outline green" style="min-width:auto;padding:4px 10px;font-size:9px" onclick="screenApp(${a.id})">AI SCREEN</button>`:''}<button class="btn-outline amber" style="min-width:auto;padding:4px 10px;font-size:9px" onclick="sendSms(${a.id})">SMS</button></td></tr>`;}).join('')}</tbody></table>`;
+    area.innerHTML = `<table class="app-table"><thead><tr><th>APPLICANT<span class="th-zh">申请人</span></th><th>RESUME<span class="th-zh">简历</span></th><th>STATUS<span class="th-zh">状态</span></th><th>SCORE<span class="th-zh">匹配度</span></th><th>ACTIONS<span class="th-zh">操作</span></th></tr></thead><tbody>${apps.map(a=>{const sc=a.screening_score>=70?'high':a.screening_score>=40?'mid':'low';return`<tr><td style="font-weight:700;font-family:var(--mono)">${a.username||'—'}</td><td style="font-size:10px;color:var(--text-muted)">${a.filename||'—'}</td><td><span class="app-status ${a.status}">${sl[a.status]||a.status}</span></td><td>${a.screening_score?`<span class="score ${sc}">${a.screening_score}%</span>`:'—'}</td><td style="display:flex;gap:4px;flex-wrap:wrap"><button class="btn-outline blue" style="min-width:auto;padding:4px 10px;font-size:9px" onclick="viewResume(${a.resume_id},${a.id},'${(a.filename||'').replace(/'/g,"\\'")}')">VIEW / 查看</button>${a.status==='pending'?`<button class="btn-outline green" style="min-width:auto;padding:4px 10px;font-size:9px" onclick="screenApp(${a.id})">AI SCREEN</button>`:`<button class="btn-outline green" style="min-width:auto;padding:4px 10px;font-size:9px" onclick="screenApp(${a.id})">RE-SCREEN</button>`}<button class="btn-outline amber" style="min-width:auto;padding:4px 10px;font-size:9px" onclick="sendSms(${a.id})">SMS</button></td></tr>`;}).join('')}</tbody></table>`;
 }
 
-async function screenApp(id) { if(!confirm('确认AI筛选？'))return; const r=await fetch(`/api/v2/applications/${id}/screen`,{method:'POST',headers}); const d=await r.json(); if(!r.ok){alert(d.error);return;} alert(`筛选完成: ${d.score}% — ${d.status}`); if(currentAppJobId)loadApplications(currentAppJobId); }
+async function screenApp(id) { if(!confirm('确认AI筛选？将覆盖之前的分析结果'))return; const r=await fetch(`/api/v2/applications/${id}/screen`,{method:'POST',headers}); const d=await r.json(); if(!r.ok){alert(d.error);return;} alert(`筛选完成: ${d.score}% — ${d.status}`); if(currentAppJobId)loadApplications(currentAppJobId); }
 
 function switchResumeTab(tab) {
     document.querySelectorAll('.resume-tab').forEach(t => t.classList.toggle('active', t.dataset.rtab === tab));
@@ -694,10 +735,25 @@ async function viewResume(resumeId, applicationId, filename) {
             if (a.name) html += `<p><strong>姓名：</strong>${a.name}</p>`;
             if (a.title || a.current_role) html += `<p><strong>职位：</strong>${a.title || a.current_role}</p>`;
             if (a.summary) html += `<p><strong>摘要：</strong>${a.summary}</p>`;
-            if (a.match_score !== undefined) html += `<p><strong>匹配度：</strong>${a.match_score}%</p>`;
-            if (a.strengths && a.strengths.length) html += `<p><strong>优势：</strong></p><ul>${a.strengths.map(s=>`<li>${s}</li>`).join('')}</ul>`;
-            if (a.weaknesses && a.weaknesses.length) html += `<p><strong>不足：</strong></p><ul>${a.weaknesses.map(s=>`<li>${s}</li>`).join('')}</ul>`;
-            if (a.skills && a.skills.length) html += `<p><strong>技能：</strong>${a.skills.join(', ')}</p>`;
+            if (a.match_score !== undefined) html += `<p><strong>综合匹配度：</strong><span style="color:var(--nerv-orange);font-size:18px;font-weight:700">${a.match_score}%</span></p>`;
+            if (a.fit_analysis && a.fit_analysis.position_fit !== undefined) html += `<p><strong>岗位匹配度：</strong><span style="color:var(--nerv-orange);font-size:16px;font-weight:700">${a.fit_analysis.position_fit}%</span></p>`;
+            if (a.matched_skills && a.matched_skills.length) {
+                html += `<p><strong>MATCHED SKILLS / 符合技能：</strong></p><div style="display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 12px">${a.matched_skills.map(s=>`<span style="background:rgba(57,255,20,0.12);color:#39ff14;border:1px solid rgba(57,255,20,0.3);padding:3px 10px;font-size:11px;font-family:var(--mono);letter-spacing:0.5px">✓ ${s}</span>`).join('')}</div>`;
+            }
+            if (a.missing_skills && a.missing_skills.length) {
+                html += `<p><strong>MISSING SKILLS / 缺失技能：</strong></p><div style="display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 12px">${a.missing_skills.map(s=>`<span style="background:rgba(255,45,45,0.1);color:#ff2d2d;border:1px solid rgba(255,45,45,0.3);padding:3px 10px;font-size:11px;font-family:var(--mono);letter-spacing:0.5px">✗ ${s}</span>`).join('')}</div>`;
+            }
+            if (a.strengths && a.strengths.length) html += `<p><strong>STRENGTHS / 优势：</strong></p><ul>${a.strengths.map(s=>`<li style="color:var(--eva-green)">${s}</li>`).join('')}</ul>`;
+            if (a.weaknesses && a.weaknesses.length) html += `<p><strong>WEAKNESSES / 不足：</strong></p><ul>${a.weaknesses.map(s=>`<li style="color:var(--eva-red)">${s}</li>`).join('')}</ul>`;
+            if (a.suggestions && a.suggestions.length) html += `<p><strong>SUGGESTIONS / 建议：</strong></p><ul>${a.suggestions.map(s=>`<li>${s}</li>`).join('')}</ul>`;
+            if (a.fit_analysis) {
+                html += '<div style="margin-top:12px;padding:12px;background:rgba(255,107,43,0.05);border:1px solid rgba(255,107,43,0.15)">';
+                html += '<p style="font-weight:700;color:var(--nerv-orange);margin-bottom:8px">FIT ANALYSIS / 匹配分析</p>';
+                if (a.fit_analysis.position_reason) html += `<p>${a.fit_analysis.position_reason}</p>`;
+                if (a.fit_analysis.skill_gaps && a.fit_analysis.skill_gaps.length) html += `<p><strong>关键技能缺口：</strong>${a.fit_analysis.skill_gaps.join('、')}</p>`;
+                if (a.fit_analysis.career_advice) html += `<p><strong>职业建议：</strong>${a.fit_analysis.career_advice}</p>`;
+                html += '</div>';
+            }
             html += '</div>';
             document.getElementById('rtab-analysis').innerHTML = html;
         } else {

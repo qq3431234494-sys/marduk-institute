@@ -356,6 +356,12 @@
 
                 <div class="tab-content" id="tab-jobs">
                     <div class="sec-title">OPEN POSITIONS <span class="zh">在招岗位</span></div>
+                    <div style="margin-bottom:14px;display:flex;gap:8px;flex-wrap:wrap">
+                        <input type="text" id="jobSearchInput" placeholder="SEARCH / 搜索岗位名称、城市、要求..." style="flex:1;min-width:180px;padding:8px 14px;background:var(--bg-deep);border:1px solid var(--border-dim);color:var(--text-primary);font-family:var(--mono);font-size:12px;letter-spacing:0.5px;outline:none;transition:border-color 0.3s" onfocus="this.style.borderColor='var(--nerv-orange)'" onblur="this.style.borderColor='var(--border-dim)'" oninput="filterJobs()">
+                        <select id="jobCityFilter" style="padding:8px 10px;background:var(--bg-deep);border:1px solid var(--border-dim);color:var(--text-primary);font-family:var(--mono);font-size:11px;outline:none;cursor:pointer" onchange="filterJobs()">
+                            <option value="">ALL CITIES / 全部城市</option>
+                        </select>
+                    </div>
                     <div id="jobList"><div class="empty"><div class="icon">🔍</div><p>LOADING...</p><p class="zh">加载中</p></div></div>
                 </div>
 
@@ -498,8 +504,30 @@ async function loadOpenJobs() {
     const res = await fetch('/api/v2/jobs/open');
     const jobs = await res.json();
     openJobsCache = jobs;
+    const cities = [...new Set(jobs.map(j=>j.city).filter(Boolean))].sort();
+    const sel = document.getElementById('jobCityFilter');
+    sel.innerHTML = '<option value="">ALL CITIES / 全部城市</option>' + cities.map(c=>`<option value="${c}">${c}</option>`).join('');
+    renderJobs(jobs);
+}
+
+function filterJobs() {
+    const q = document.getElementById('jobSearchInput').value.trim().toLowerCase();
+    const city = document.getElementById('jobCityFilter').value;
+    let filtered = openJobsCache;
+    if (city) filtered = filtered.filter(j => j.city === city);
+    if (q) filtered = filtered.filter(j =>
+        (j.title||'').toLowerCase().includes(q) ||
+        (j.city||'').toLowerCase().includes(q) ||
+        (j.requirements||'').toLowerCase().includes(q) ||
+        (j.description||'').toLowerCase().includes(q) ||
+        (j.salary_range||'').toLowerCase().includes(q)
+    );
+    renderJobs(filtered);
+}
+
+function renderJobs(jobs) {
     const list = document.getElementById('jobList');
-    if (!jobs.length) { list.innerHTML = '<div class="empty"><div class="icon">🔍</div><p>NO OPEN POSITIONS</p><p class="zh">暂无在招岗位</p></div>'; return; }
+    if (!jobs.length) { list.innerHTML = '<div class="empty"><div class="icon">🔍</div><p>NO MATCHING POSITIONS</p><p class="zh">没有匹配的岗位</p></div>'; return; }
     list.innerHTML = jobs.map(j => `
         <div class="job-card">
             <div class="job-card-main">
